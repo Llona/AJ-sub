@@ -1,1 +1,1 @@
-# AJ-sub
+Replase sub by sdb file, implement by python
