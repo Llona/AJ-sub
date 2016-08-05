@@ -1,28 +1,21 @@
 #!/usr/bin/python3
 """
-Ver 1.0 - First version
-Ver 2.0 - Uses database for match SUB file name and read Sublist.ini for match Sub string
-Ver 3.0 - Uses GUI for parameter input
-Ver 4.0 - Re-develop this application by Python3
+Provide function that for replace sub string need
 """
 import glob
 import os
 import re
 
-subdata_dic = {}  # sub database
-subpath = 'D:\ScripFile\python\Replase_sub\\test_sub'  # ssa or ass sub file path
-subfile_list = []  # All sub file list that wait to replace
-subfiletype_list = ['*.ssa', '*.ass']  # sub file type, ex: *.ssa ,*.ass...
-
 """
 # -----Read sub databse file SubList.sdb and store to dict structure-----
+1. sub database file name
 Return: string database store in dic structure
 """
-def get_database_list():
+def get_database_list(sub_database):
     subdata_dic_ld = {}
     subdata_tmp_lv = ''
 
-    sublist_h = open("SubList.sdb", 'r', encoding='utf16')
+    sublist_h = open(sub_database, 'r', encoding='utf16')
     while True:
         subdata_tmp_lv = sublist_h.readline()
         if subdata_tmp_lv:
@@ -67,7 +60,7 @@ def replace_string_write_to_file(subfile_list, subdata_dic):
         sub_content_temp_lv = sub_content_lv
 
         for j, v in subdata_dic.items():
-            #print(j, v)
+            # print(j, v)
             sub_content_lv = sub_content_lv.replace(j, v)
         if sub_content_temp_lv != sub_content_lv:
             subcontent_read_h.seek(0, 0)
@@ -78,13 +71,3 @@ def replace_string_write_to_file(subfile_list, subdata_dic):
             print("Sub file doesn't need to change:", i)
         # print(sub_content)
         subcontent_read_h.close()
-
-
-# Get database list to dic structure
-subdata_dic = get_database_list()
-# Get sub file list by type
-subfile_list = get_file_list(subpath, subfiletype_list)
-# Replace all file list string by dic structure
-replace_string_write_to_file(subfile_list, subdata_dic)
-
-print("Replace Done")
