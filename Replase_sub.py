@@ -37,7 +37,6 @@ for i in subfiletype_list:
     if subtemp_list:
         subfile_list.extend(subtemp_list)
 
-
 #-----Read all sub file and replace string that define in database file-----
 for i in subfile_list:
     subcontent_read_h = open(i, 'r+', encoding='utf16')
@@ -46,17 +45,15 @@ for i in subfile_list:
 
     for j, v in subdata_dic.items():
         #print(j,v)
-        #strinfo_h = re.compile(j)
-        #sub_content = strinfo_h.sub(v, sub_content)
         sub_content = sub_content.replace(j,v)
     if sub_content_temp != sub_content:
         subcontent_read_h.seek(0,0)
         subcontent_read_h.write(sub_content)
         #print("Find string need to modify")
     else:
-        #print("")
-
-    print(sub_content)
+        print("Sub file doesn't need to change:", i)
+        
+    #print(sub_content)
     sub_content = ''  #clean temp var
     sub_content_temp = '' #clean temp var
     subcontent_read_h.close()
