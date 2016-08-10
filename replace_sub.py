@@ -37,37 +37,22 @@ def get_database_list(sub_database):
 # Return: all sub file list
 def get_file_list(sub_path, file_type):
     subfile_list_ll = []
-    os.chdir(sub_path)
+    # os.chdir(sub_path)
 
     for i in file_type:
-        subtemp_list_ll = glob.glob(i)
+        subtemp_list_ll = glob.glob(sub_path+'\\'+i)
         if subtemp_list_ll:
             subfile_list_ll.extend(subtemp_list_ll)
 
     return subfile_list_ll
 
 
-# # -----Read all sub file and replace string that define in database file-----
+# -----Read all sub file and replace string that define in database file-----
 # 1. sub file list
 # 2. string database store in dic structure
 # Return: none
-def replace_string_write_to_file(subfile_list, subdata_dic):
-
-    for i in subfile_list:
-        subcontent_read_h = open(i, 'r+', encoding='utf16')
-        sub_content_lv = subcontent_read_h.read()
-        sub_content_temp_lv = sub_content_lv
-
-        for j, v in subdata_dic.items():
-            # print(j, v)
-            sub_content_lv = sub_content_lv.replace(j, v)
-
-        if sub_content_temp_lv != sub_content_lv:
-            subcontent_read_h.seek(0, 0)
-            subcontent_read_h.write(sub_content_lv)
-            print("Find string need to modify")
-        else:
-            pass
-            print("Sub file doesn't need to change:", i)
-
-        subcontent_read_h.close()
+def replace_specif_string(content, subdata_dic):
+    for j, v in subdata_dic.items():
+        # print(j, v)
+        content = content.replace(j, v)
+    return content

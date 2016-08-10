@@ -1,8 +1,10 @@
-v4.00.01, 2006/8/5
+v4.00.01, 2016/8/5
 1. First version for sub replace tool
 2. can replace sub specific string in fixed path by *.sdb 
 
-v4.01.00, 2006/8/9
+v4.01.00, 2016/8/9
 1. Add gui
 2. Add Setting.ini file for setting value control
 
+v4.02.00, 2016/8/10
+1. Add convert Sub file from simple chinese to TW traditional chinese function
