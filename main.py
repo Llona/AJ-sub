@@ -6,26 +6,28 @@ Ver 3.0 - Uses GUI for parameter input
 Ver 4.0 - Re-develop this application by Python3
 Ver  4.1 - Add GUI
 Ver 4.2 - Add convert  Sub file from simple chinese to TW traditional chinese function
+Ver 4.2.1 - Add backup original sub file function
 """
-# import tkinter as tk
 
 from tkinter import *
 import tkinter.messagebox
 import re
 import configparser
 import os
+import shutil
 import replace_sub
 import langconver
 
 title = "Replace Sub"
-version = "v4.02.00"
+version = "v4.02.01"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
+backup_folder_name = "backfile"
 subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
 
 
-class replace_sub_gui(Frame):
+class replace_Sub_Gui(Frame):
     def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None):
         Frame.__init__(self, master)
         self.subfiletype_list_ini = subfiletype_ini
@@ -89,11 +91,14 @@ class replace_sub_gui(Frame):
         except Exception as ex:
             print('Error!!!! write fail')
 
+    def store_origin_file_to_backup_folder(self, file, back_folder):
+        shutil.copy2(file, back_folder)
+
     def conv_and_replace_sub_write_file(self, subfile_list, subdata_dic):
         status_lv = True
 
-        # -----Test sub file format -----
         for i in subfile_list:
+            # -----Test sub file format -----
             try:
                 subcontent_h = open(i, 'r+', encoding='utf8')
                 sub_content_lv = subcontent_h.read()
@@ -118,6 +123,8 @@ class replace_sub_gui(Frame):
                             continue
                     # -----For GBK and GB2312 format -----
                     subcontent_h.close()
+                    # -----backup origin sub file to backup folder-----
+                    self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
                     # -----convert to TC language
                     tw_str_lv = langconver.s2tw(sub_content_lv)
@@ -128,6 +135,9 @@ class replace_sub_gui(Frame):
                         subcontent_write_h.write(tw_str_lv)
                         subcontent_write_h.close()
                     continue
+
+            # -----backup origin sub file to backup folder-----
+            self.store_origin_file_to_backup_folder(i, self.user_input_path + '\\' + backup_folder_name)
             # -----for utf8 and utf16 format -----
             sub_content_temp_lv = sub_content_lv
             # -----convert to TC language
@@ -145,7 +155,7 @@ class replace_sub_gui(Frame):
         self.user_input_path = self.sub_path_entry.get()
         # -----Get user input file types and Split type string then store to list-----
         self.user_input_type = self.sub_type_entry.get()
-        # -----Check user input in GUI -----
+        # -----Check user input in GUI-----
         if self.user_input_path == "" or self.user_input_type == "":
             tkinter.messagebox.showinfo("message box", "Please input SUB file PATH and TYPE")
             return
@@ -153,15 +163,15 @@ class replace_sub_gui(Frame):
             tkinter.messagebox.showinfo("message box", "Error! can't find sub path")
             return
 
-        # -----get config ini file setting -----
+        # -----get config ini file setting-----
         self.subpath_ini = self.read_config(sub_setting_name, 'Global', 'subpath')
         self.subfiletype_list_ini = self.read_config(sub_setting_name, 'Global', 'subtype')
 
-        # -----remove '\' or '/' in end of path string -----
+        # -----remove '\' or '/' in end of path string-----
         self.user_input_path = re.sub(r"/$", '', self.user_input_path)
         self.user_input_path = re.sub(r"\\$", "", self.user_input_path)
 
-        # -----Store user input path and type into Setting.ini config file -----
+        # -----Store user input path and type into Setting.ini config file-----
         if not self.user_input_path == self.subpath_ini:
             print("path not match, write new path to ini")
             self.write_config(sub_setting_name,  'Global', 'subpath', self.user_input_path)
@@ -169,14 +179,16 @@ class replace_sub_gui(Frame):
             print("type not match, write new type list to ini")
             self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
 
-        # ----Split file type string and store to list
+        # ----Split file type string and store to list-----
         re_lv = re.sub(r' ', '', self.user_input_type)
         self.user_input_type = re_lv.split(",")
 
-        # Get sub file list by type
+        # -----Get sub file list by type-----
         sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
-        # Replace all file list string by dic structure
-        # replace_sub.replace_string_write_to_file(sub_file_list, sub_data_dic)
+        # -----make backup folder for store origin sub files-----
+        if not os.path.exists(self.user_input_path+'\\'+backup_folder_name):
+            os.makedirs(self.user_input_path+'\\'+backup_folder_name)
+        # -----Replace all file list string by dic structure-----
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
 
         if status:
@@ -185,6 +197,7 @@ class replace_sub_gui(Frame):
             tkinter.messagebox.showinfo("message box", "Error! Replace Sub error, please check log file.")
         # for i in self.user_input_type:
         #     print(i)
+
 
 def check_all_file_status():
     if not os.path.exists(sub_database_name):
@@ -212,5 +225,5 @@ else:
         root = Tk()
         root.title(title)
         root.iconbitmap('icons\\main.ico')
-        app = replace_sub_gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list)
+        app = replace_Sub_Gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list)
         app.mainloop()

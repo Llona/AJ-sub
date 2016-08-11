@@ -1,5 +1,6 @@
 import opencc
 
+
 def s2tw(ori_str):
     ori_str_lv = ori_str
     conv_h = opencc.OpenCC('s2tw')  # convert from Simplified Chinese to Traditional Chinese

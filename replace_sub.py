@@ -37,13 +37,16 @@ def get_database_list(sub_database):
 # Return: all sub file list
 def get_file_list(sub_path, file_type):
     subfile_list_ll = []
+
     # os.chdir(sub_path)
 
     for i in file_type:
         subtemp_list_ll = glob.glob(sub_path+'\\'+i)
+        # subtemp_list_ll = glob.glob( i)
         if subtemp_list_ll:
             subfile_list_ll.extend(subtemp_list_ll)
 
+    # os.chdir(app_current_path)
     return subfile_list_ll
 
 
