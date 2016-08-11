@@ -211,5 +211,6 @@ else:
     if __name__ == '__main__':
         root = Tk()
         root.title(title)
+        root.iconbitmap('icons\\main.ico')
         app = replace_sub_gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list)
         app.mainloop()
