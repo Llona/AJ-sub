@@ -4,9 +4,10 @@ Ver 1.0 - First version
 Ver 2.0 - Uses database for match SUB file name and read Sublist.ini for match Sub string
 Ver 3.0 - Uses GUI for parameter input
 Ver 4.0 - Re-develop this application by Python3
-Ver  4.1 - Add GUI
+Ver 4.1 - Add GUI
 Ver 4.2 - Add convert  Sub file from simple chinese to TW traditional chinese function
 Ver 4.2.1 - Add backup original sub file function
+Ver 4.2.2 - Add About content, modify message box type for different message type
 """
 
 from tkinter import *
@@ -15,23 +16,41 @@ import re
 import configparser
 import os
 import shutil
+
 import replace_sub
 import langconver
 
-title = "Replace Sub"
-version = "v4.02.01"
+title = "AJSub - 強力轉換! 轉碼君"
+version = "v4.02.02"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
 subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
+help_text = \
+    "AJSub "+version+"\n\n"\
+    "   本軟體會自動將目錄下的所有字幕檔簡體轉為繁體\n"\
+    "   但字型設定會是簡體, 這樣使用某些字型時系統才會認得\n"\
+    "   (例如方正系列的字型)\n"\
+    "   UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式\n"\
+    "   原始檔案備份在:"+backup_folder_name+"目錄下\n\n"\
+    "   使用說明:\n"\
+    "   1. 將字幕檔路徑輸入SUB type欄位\n"\
+    "   2. 輸入字幕檔類型並用逗點隔開, 如*.ass, *.ssa\n"\
+    "   3. 按下Start之後, enjoy it!!!!\n\n"\
+    "AJSub\n"\
+    "Copyright 2016\n\n"\
+    "This product includes OpenCC-python, develop by:\n"\
+    "[OpenCC-Python](https://github.com/yichen0831/opencc-python).\n"\
+
 
 
 class replace_Sub_Gui(Frame):
-    def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None):
+    def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None, help_text=None):
         Frame.__init__(self, master)
         self.subfiletype_list_ini = subfiletype_ini
         self.subpath_ini = subfilepath_ini
+        self.help_text = help_text
         self.user_input_path = ""
         self.user_input_type = ""
         self.grid()
@@ -54,22 +73,35 @@ class replace_Sub_Gui(Frame):
         self.sub_type_entry["width"] = 60
         self.sub_type_entry.insert(0, self.subfiletype_list_ini)
         self.sub_type_entry.grid(row=1, column=1, columnspan=6)
-        # -----Button start-----
+        # -----Button Start-----
         self.start_button = Button(self)
         self.start_button["text"] = "Start"
         self.start_button["width"] = 5
         self.start_button["command"] = self.replace_all_sub_in_path
         self.start_button.grid(row=2, column=3)
-        # -----Button Exit-----
+        # -----Button Help-----
         self.exit_button = Button(self)
         self.exit_button["text"] = "Help"
         self.exit_button["width"] = 5
+        self.exit_button["command"] = self.print_about
         self.exit_button.grid(row=2, column=4)
-
+        # -----Label version-----
         self.version_label = Label(self)
         self.version_label["text"] = version
         self.version_label["width"] = 6
         self.version_label.grid(row=3, column=6)
+
+    def print_about(self):
+        tkinter.messagebox.showinfo("About", self.help_text)
+
+    def create_popup(self):
+        # top = Toplevel()
+        # msg = Label(top, text="11111")
+        # msg.pack(side=TOP, anchor=W, fill=X, expand=YES)
+        pass
+
+    def close_popup(self):
+        pass
 
     def read_config(self, filename, section, key):
         config_lh = configparser.ConfigParser()
@@ -98,7 +130,7 @@ class replace_Sub_Gui(Frame):
         status_lv = True
 
         for i in subfile_list:
-            # -----Test sub file format -----
+            # -----Test sub file format-----
             try:
                 subcontent_h = open(i, 'r+', encoding='utf8')
                 sub_content_lv = subcontent_h.read()
@@ -121,12 +153,12 @@ class replace_Sub_Gui(Frame):
                             status_lv = False
                             print("Error! can't read format:", i)
                             continue
-                    # -----For GBK and GB2312 format -----
+                    # -----For GBK and GB2312 format-----
                     subcontent_h.close()
                     # -----backup origin sub file to backup folder-----
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
-                    # -----convert to TC language
+                    # -----convert to TC language-----
                     tw_str_lv = langconver.s2tw(sub_content_lv)
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
@@ -138,12 +170,12 @@ class replace_Sub_Gui(Frame):
 
             # -----backup origin sub file to backup folder-----
             self.store_origin_file_to_backup_folder(i, self.user_input_path + '\\' + backup_folder_name)
-            # -----for utf8 and utf16 format -----
+            # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
-            # -----convert to TC language
+            # -----convert to TC language-----
             tw_str_lv = langconver.s2tw(sub_content_lv)
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
-            # -----if sub file content is changed, write to origin file -----
+            # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
                 subcontent_h.seek(0, 0)
                 subcontent_h.write(tw_str_lv)
@@ -157,10 +189,10 @@ class replace_Sub_Gui(Frame):
         self.user_input_type = self.sub_type_entry.get()
         # -----Check user input in GUI-----
         if self.user_input_path == "" or self.user_input_type == "":
-            tkinter.messagebox.showinfo("message box", "Please input SUB file PATH and TYPE")
+            tkinter.messagebox.showinfo("message", "Please input SUB file PATH and TYPE")
             return
         if not os.path.exists(self.user_input_path):
-            tkinter.messagebox.showinfo("message box", "Error! can't find sub path")
+            tkinter.messagebox.showerror ("message", "Error! can't find sub path")
             return
 
         # -----get config ini file setting-----
@@ -192,9 +224,9 @@ class replace_Sub_Gui(Frame):
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
 
         if status:
-            tkinter.messagebox.showinfo("message box", "Replace All Sub Done.")
+            tkinter.messagebox.showinfo("message", "Replace All Sub Done.")
         else:
-            tkinter.messagebox.showinfo("message box", "Error! Replace Sub error, please check log file.")
+            tkinter.messagebox.showerror("message Error", "Error! Replace Sub error, please check log file.")
         # for i in self.user_input_type:
         #     print(i)
 
@@ -206,13 +238,13 @@ def check_all_file_status():
         return False
     return True
 
-# Check database is correct or not
+# -----Check database is correct or not-----
 if not check_all_file_status():
-    tkinter.messagebox.showinfo("message box", "Error! SubList.sdb and Setting.ini not found or empty")
+    tkinter.messagebox.showinfo("message Error", "Error! SubList.sdb and Setting.ini not found or empty")
 else:
-    # Get database list to dic structure
+    # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
-    # Get setting from Settings.ini
+    # -----Get setting from Settings.ini-----
     file_ini_h = open(sub_setting_name, encoding='utf16')
     config_h = configparser.ConfigParser()
     config_h.read_file(file_ini_h)
@@ -220,10 +252,10 @@ else:
     subpath = config_h.get('Global', 'subpath')
     subfiletype_list = config_h.get('Global', 'subtype')
 
-    # Start GUI
+    # -----Start GUI-----
     if __name__ == '__main__':
         root = Tk()
         root.title(title)
         root.iconbitmap('icons\\main.ico')
-        app = replace_Sub_Gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list)
+        app = replace_Sub_Gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list, help_text=help_text)
         app.mainloop()
