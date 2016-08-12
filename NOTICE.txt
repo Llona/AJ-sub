@@ -1,0 +1,5 @@
+AJSub
+Copyright 2016
+
+This product includes OpenCC-python, develop by:
+[OpenCC-Python](https://github.com/yichen0831/opencc-python).
