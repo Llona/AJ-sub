@@ -12,7 +12,7 @@
 
 UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式
 
-原始檔案備份在:"+backup_folder_name+"目錄下
+原始檔案備份在:backfile目錄下
 
 ## 使用說明
 
