@@ -6,7 +6,7 @@
 
 本軟體會自動將目錄下的所有字幕檔簡體轉為繁體
 
-繁簡轉換是採用OpenCC-python, develop by:[OpenCC-Python](https://github.com/yichen0831/opencc-python).
+繁簡轉換是採用OpenCC-python, develop by:[Yichen (Eugene)]:(https://github.com/yichen0831/opencc-python).
 
 但字型設定會是簡體, 這樣使用某些字型時系統才會認得(例如方正系列的字型)
 
