@@ -11,7 +11,9 @@ a = Analysis(['D:\\github\\AJ-sub\\main.py'],
 			 ('D:\\github\\AJ-sub\\SubList.sdb','.'),
 			 ('D:\\github\\AJ-sub\\txt_map\\opencc\\config\\*','opencc\\config'),
 			 ('D:\\github\\AJ-sub\\txt_map\\opencc\\dictionary\\*','opencc\\dictionary'),
-			 ('D:\\github\\AJ-sub\\icons*','icons'),
+			 ('D:\\github\\AJ-sub\\icons\\*','icons'),
+			 ('D:\\github\\AJ-sub\\NOTICE.txt','.'),
+			 ('D:\\github\\AJ-sub\\LICENSE','.')
 			 ],
 			 
              hiddenimports=[],
