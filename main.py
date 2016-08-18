@@ -8,6 +8,7 @@ Ver 4.1 - Add GUI
 Ver 4.2 - Add convert  Sub file from simple chinese to TW traditional chinese function
 Ver 4.2.1 - Add backup original sub file function
 Ver 4.2.2 - Add About content, modify message box type for different message type
+Ver 4.2.3 - Modify About content
 """
 
 from tkinter import *
@@ -21,7 +22,7 @@ import replace_sub
 import langconver
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.02.02"
+version = "v4.02.03"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -29,19 +30,21 @@ subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
 help_text = \
     "AJSub "+version+"\n\n"\
-    "   本軟體會自動將目錄下的所有字幕檔簡體轉為繁體\n"\
-    "   但字型設定會是簡體, 這樣使用某些字型時系統才會認得\n"\
+    "   本軟體會自動將指定目錄下的所有字幕檔簡體轉為繁體\n"\
+    "   字型設定部份會轉為簡體, 這樣使用某些字型時系統才會認得\n"\
     "   (例如方正系列的字型)\n"\
     "   UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式\n"\
     "   原始檔案備份在:"+backup_folder_name+"目錄下\n\n"\
     "   使用說明:\n"\
     "   1. 將字幕檔路徑輸入SUB type欄位\n"\
     "   2. 輸入字幕檔類型並用逗點隔開, 如*.ass, *.ssa\n"\
-    "   3. 按下Start之後, enjoy it!!!!\n\n"\
-    "AJSub\n"\
+    "   3. 按下Start之後, enjoy it!!!!\n"\
+	"   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n\n"\
+    "AJSub "+version+"\n"\
     "Copyright 2016\n\n"\
+	"Implement by [Llona](https://github.com/Llona/AJ-sub).\n\n"\
     "This product includes OpenCC-python, develop by:\n"\
-    "[OpenCC-Python](https://github.com/yichen0831/opencc-python).\n"\
+    "[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\n"\
 
 
 

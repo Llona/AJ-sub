@@ -1,5 +1,7 @@
 AJSub
 Copyright 2016
 
+Implement by [Llona](https://github.com/Llona/AJ-sub).
+
 This product includes OpenCC-python, develop by:
-[OpenCC-Python](https://github.com/yichen0831/opencc-python).
+[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).

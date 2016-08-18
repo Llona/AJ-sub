@@ -8,3 +8,10 @@ v4.01.00, 2016/8/9
 
 v4.02.00, 2016/8/10
 1. Add convert Sub file from simple chinese to TW traditional chinese function
+
+v4.02.02, 2016/8/12
+1. Add About content, modify message box type for different message type
+
+V4.02.03, 2016/8/18
+1. Modify About, Readme,  content, NOTICE.txt...contents
+2. Change spec. file for build one-file type executable
