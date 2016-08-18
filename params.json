@@ -1,0 +1,6 @@
+{
+  "name": "Aj-sub",
+  "tagline": "",
+  "body": "# AJSub - 強力轉換!!轉碼君\r\n\r\n字幕檔自動簡繁轉換, Implement by [Llona](https://github.com/Llona/AJ-sub).\r\n\r\n## Introduction 軟體簡介\r\n\r\n- 本軟體會自動將指定目錄下的所有字幕檔內容簡體轉為繁體\r\n\r\n例如:\r\n> \r\nStyle: Default,方正準圓_GBK,50,&H00FFFFFF,&HF0000000,&H00000000,&H0058281B,-1,0,0,0,100,100,0,0,1,2,0,2,30,30,15,1\r\nS\r\n\r\n會轉為\r\n\r\n> Style: Default,方正准圆_GBK,50,&H00FFFFFF,&HF0000000,&H00000000,&H0058281B,-1,0,0,0,100,100,0,0,1,2,0,2,30,30,15,1\r\n\r\n- 字型設定部份會轉為簡體, 這樣使用某些字型時系統才會認得 (例如方正系列的字型)\r\n\r\n- UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式\r\n\r\n- 原始檔案備份在:backfile目錄下\r\n\r\n## 使用說明\r\n\r\n1. 執行AJSub.exe \r\n\r\n2. 將字幕檔路徑輸入SUB path欄位\r\n\r\n3. 將字幕檔類型輸入SUB type欄位並用逗點隔開, 如*.ass, *.ssa\r\n\r\n4. 按下Start之後, enjoy it!!!!\r\n\r\n5. 字型設定檔若需新增或修改, 請直接修改SubList.sdb \r\n\r\n----------\r\n\r\n- 繁簡轉換功能是採用OpenCC-python, develop by:[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
