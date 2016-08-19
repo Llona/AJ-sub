@@ -22,12 +22,14 @@ import replace_sub
 import langconver
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.02.03"
+version = "v4.02.04"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
 subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
+progress_txt = "強力轉換中..."
+idle_txt = "zzz..."
 help_text = \
     "AJSub "+version+"\n\n"\
     "   本軟體會自動將指定目錄下的所有字幕檔簡體轉為繁體\n"\
@@ -57,7 +59,10 @@ class replace_Sub_Gui(Frame):
         self.user_input_path = ""
         self.user_input_type = ""
         self.grid()
+        self.thread_is_running = False
         self.create_widgets()
+
+        root.bind('<Key-Return>', self.press_key_enter)
 
     def create_widgets(self):
         # -----First input entry-----
@@ -81,29 +86,48 @@ class replace_Sub_Gui(Frame):
         self.start_button["text"] = "Start"
         self.start_button["width"] = 5
         self.start_button["command"] = self.replace_all_sub_in_path
-        self.start_button.grid(row=2, column=3)
+        self.start_button.grid(row=2, column=2, columnspan=2)
         # -----Button Help-----
-        self.exit_button = Button(self)
-        self.exit_button["text"] = "Help"
-        self.exit_button["width"] = 5
-        self.exit_button["command"] = self.print_about
-        self.exit_button.grid(row=2, column=4)
+        self.help_button = Button(self)
+        self.help_button["text"] = "Help"
+        self.help_button["width"] = 5
+        self.help_button["command"] = self.print_about
+        self.help_button.grid(row=2, column=3, columnspan=2)
         # -----Label version-----
         self.version_label = Label(self)
         self.version_label["text"] = version
         self.version_label["width"] = 6
-        self.version_label.grid(row=3, column=6)
+        self.version_label["state"] = 'disable'
+        self.version_label.grid(row=3, column=6, columnspan=2)
+        # -----Label state-----
+        self.version_state = Label(self)
+        self.version_state["text"] = ""
+        self.version_state["width"] = 15
+        self.version_state.grid(row=3, column=0, columnspan=2, sticky='w')
+        # self.version_state.grid(row=3, column=0, sticky='w')
+
+    def press_key_enter(self, event):
+        self.replace_all_sub_in_path()
 
     def print_about(self):
         tkinter.messagebox.showinfo("About", self.help_text)
 
     def create_popup(self):
-        # top = Toplevel()
-        # msg = Label(top, text="11111")
-        # msg.pack(side=TOP, anchor=W, fill=X, expand=YES)
         pass
+        # self.top_window = Toplevel()
+        # self.top_window.overrideredirect(1)
+        # msg = Label(self.top_window, text="轉換工作進行中...")
+        # root.update_idletasks()
+        # msg.pack(side=TOP, anchor=W, fill=X, expand=YES)
+        # self.top_window['takefocus'] = True
+        # self.top_window.grab_set()
+        # self.top_window.focus_force()
+        # msg.focus()
+        # msg.grab_set()
+        # root.update_idletasks()
 
     def close_popup(self):
+        #self.top_window.destroy()
         pass
 
     def read_config(self, filename, section, key):
@@ -218,6 +242,13 @@ class replace_Sub_Gui(Frame):
         re_lv = re.sub(r' ', '', self.user_input_type)
         self.user_input_type = re_lv.split(",")
 
+        # -----Dim button for string converting-----
+        self.version_state["text"] = progress_txt
+        self.version_state["fg"] = "blue"
+        self.start_button["state"] = 'disable'
+        self.help_button["state"] = 'disable'
+        self.update_idletasks()
+
         # -----Get sub file list by type-----
         sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
         # -----make backup folder for store origin sub files-----
@@ -226,12 +257,16 @@ class replace_Sub_Gui(Frame):
         # -----Replace all file list string by dic structure-----
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
 
+        # -----Set button and progressing state to normal-----
+        self.version_state["text"] = ""
+        self.start_button["state"] = 'normal'
+        self.help_button["state"] = 'normal'
+        self.update_idletasks()
+
         if status:
             tkinter.messagebox.showinfo("message", "Replace All Sub Done.")
         else:
             tkinter.messagebox.showerror("message Error", "Error! Replace Sub error, please check log file.")
-        # for i in self.user_input_type:
-        #     print(i)
 
 
 def check_all_file_status():
@@ -240,6 +275,7 @@ def check_all_file_status():
     if not os.path.exists(sub_setting_name):
         return False
     return True
+
 
 # -----Check database is correct or not-----
 if not check_all_file_status():
