@@ -39,10 +39,10 @@ help_text = \
     "   1. 將字幕檔路徑輸入SUB type欄位\n"\
     "   2. 輸入字幕檔類型並用逗點隔開, 如*.ass, *.ssa\n"\
     "   3. 按下Start之後, enjoy it!!!!\n"\
-	"   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n\n"\
+    "   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n\n"\
     "AJSub "+version+"\n"\
     "Copyright 2016\n\n"\
-	"Implement by [Llona](https://github.com/Llona/AJ-sub).\n\n"\
+    "Implement by [Llona](https://github.com/Llona/AJ-sub).\n\n"\
     "This product includes OpenCC-python, develop by:\n"\
     "[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\n"\
 
@@ -195,7 +195,7 @@ class replace_Sub_Gui(Frame):
             tkinter.messagebox.showinfo("message", "Please input SUB file PATH and TYPE")
             return
         if not os.path.exists(self.user_input_path):
-            tkinter.messagebox.showerror ("message", "Error! can't find sub path")
+            tkinter.messagebox.showerror("message", "Error! can't find sub path")
             return
 
         # -----get config ini file setting-----
