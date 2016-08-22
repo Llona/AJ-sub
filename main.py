@@ -9,6 +9,10 @@ Ver 4.2 - Add convert  Sub file from simple chinese to TW traditional chinese fu
 Ver 4.2.1 - Add backup original sub file function
 Ver 4.2.2 - Add About content, modify message box type for different message type
 Ver 4.2.3 - Modify About content
+Ver 4.3.0 -
+    1. Add log widge and print log into log widge
+    2. Add convert clipboard function
+    3. Modify main process for error handling
 """
 
 from tkinter import *
@@ -17,12 +21,13 @@ import re
 import configparser
 import os
 import shutil
+from tkinter.scrolledtext import ScrolledText
 
 import replace_sub
 import langconver
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.02.04"
+version = "v4.03.00"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -49,7 +54,6 @@ help_text = \
     "[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\n"\
 
 
-
 class replace_Sub_Gui(Frame):
     def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None, help_text=None):
         Frame.__init__(self, master)
@@ -59,55 +63,81 @@ class replace_Sub_Gui(Frame):
         self.user_input_path = ""
         self.user_input_type = ""
         self.grid()
-        self.thread_is_running = False
+        # -----Define all GUI item-----
+        self.sub_path_label = Label(self)
+        self.sub_path_entry = Entry(self)
+        self.sub_type_label = Label(self)
+        self.sub_type_entry = Entry(self)
+        self.start_button = Button(self)
+        self.help_button = Button(self)
+        self.clip_button = Button(self)
+        self.empty_label = Label(self)
+        self.version_label = Label(self)
+        self.version_state = Label(self)
+        # self.log = Text(self, state="disabled")
+        self.log = ScrolledText(self, xscrollcommand=VERTICAL, wrap='none', state="disabled")
+
         self.create_widgets()
+
+        # -----Set Text log fone color-----
+        self.log.tag_config("error", foreground="#CC0000")
+        self.log.tag_config("info", foreground="#008800")
 
         root.bind('<Key-Return>', self.press_key_enter)
 
     def create_widgets(self):
         # -----First input entry-----
-        self.sub_path_label = Label(self)
         self.sub_path_label["text"] = "SUB Path:"
         self.sub_path_label.grid(row=0, column=0)
-        self.sub_path_entry = Entry(self)
         self.sub_path_entry["width"] = 60
         self.sub_path_entry.insert(0, self.subpath_ini)
         self.sub_path_entry.grid(row=0, column=1, columnspan=6)
         # -----File type entry
-        self.sub_type_label = Label(self)
         self.sub_type_label["text"] = "SUB type:"
         self.sub_type_label.grid(row=1, column=0)
-        self.sub_type_entry = Entry(self)
         self.sub_type_entry["width"] = 60
         self.sub_type_entry.insert(0, self.subfiletype_list_ini)
         self.sub_type_entry.grid(row=1, column=1, columnspan=6)
         # -----Button Start-----
-        self.start_button = Button(self)
         self.start_button["text"] = "Start"
         self.start_button["width"] = 5
         self.start_button["command"] = self.replace_all_sub_in_path
         self.start_button.grid(row=2, column=2, columnspan=2)
         # -----Button Help-----
-        self.help_button = Button(self)
         self.help_button["text"] = "Help"
-        self.help_button["width"] = 5
         self.help_button["command"] = self.print_about
         self.help_button.grid(row=2, column=3, columnspan=2)
+        # -----Button Clipboard-----
+        self.clip_button["text"] = "Convert Clipboard"
+        self.clip_button["command"] = self.convert_clipboard
+        self.clip_button.grid(row=2, column=5, columnspan=2)
+        # -----Label empty-----
+        self.empty_label["text"] = ""
+        self.empty_label["width"] = 15
+        self.empty_label.grid(row=3, column=0, columnspan=2, sticky='w')
+        # self.version_state.grid(row=3, column=0, sticky='w')
         # -----Label version-----
-        self.version_label = Label(self)
         self.version_label["text"] = version
-        self.version_label["width"] = 6
         self.version_label["state"] = 'disable'
-        self.version_label.grid(row=3, column=6, columnspan=2)
+        self.version_label.grid(row=4, column=6, columnspan=2)
         # -----Label state-----
-        self.version_state = Label(self)
         self.version_state["text"] = ""
         self.version_state["width"] = 15
-        self.version_state.grid(row=3, column=0, columnspan=2, sticky='w')
+        self.version_state.grid(row=4, column=0, columnspan=2, sticky='w')
         # self.version_state.grid(row=3, column=0, sticky='w')
+        # -----Text log-----
+        self.log["width"] = 80
+        # self.log["font"] = ("Purisa", 10)
+        self.log.grid(row=5, column=0, columnspan=10, sticky='NSWE')
 
     def press_key_enter(self, event):
         self.replace_all_sub_in_path()
+
+    def convert_clipboard(self):
+        clip_content_lv = self.clipboard_get()
+        self.clipboard_clear()
+        clip_content_lv = langconver.convert_lang_select(clip_content_lv, 's2t')
+        self.clipboard_append(clip_content_lv)
 
     def print_about(self):
         tkinter.messagebox.showinfo("About", self.help_text)
@@ -127,28 +157,47 @@ class replace_Sub_Gui(Frame):
         # root.update_idletasks()
 
     def close_popup(self):
-        #self.top_window.destroy()
+        # self.top_window.destroy()
         pass
 
+    def setlog(self, string, level=None):
+        self.log.config(state="normal")
+
+        if (level != 'error') and (level != 'info'):
+            level = ""
+
+        self.log.insert(INSERT, string + "\n", level)
+        # -----scroll to end of text widge-----
+        self.log.see(END)
+        self.update_idletasks()
+
+        self.log.config(state="disabled")
+
     def read_config(self, filename, section, key):
-        config_lh = configparser.ConfigParser()
-        file_ini_lh = open(filename, 'r', encoding='utf16')
-        config_lh.read_file(file_ini_lh)
-        file_ini_lh.close()
-        return config_lh.get(section, key)
+        try:
+            config_lh = configparser.ConfigParser()
+            file_ini_lh = open(filename, 'r', encoding='utf16')
+            config_lh.read_file(file_ini_lh)
+            file_ini_lh.close()
+            return config_lh.get(section, key)
+        except:
+            self.setlog("Error! Read setting to ini file fail, "
+                        "please create UTF-16 format " + filename + " in tool path", 'error')
 
     def write_config(self, filename, sections, key, value):
-        config_lh = configparser.ConfigParser()
-        file_ini_lh = open(filename, 'r', encoding='utf16')
-        config_lh.read_file(file_ini_lh)
-        file_ini_lh.close()
         try:
+            config_lh = configparser.ConfigParser()
+            file_ini_lh = open(filename, 'r', encoding='utf16')
+            config_lh.read_file(file_ini_lh)
+            file_ini_lh.close()
+
             file_ini_lh = open(filename, 'w', encoding='utf16')
             config_lh.set(sections, key, value)
             config_lh.write(file_ini_lh)
             file_ini_lh.close()
         except Exception as ex:
-            print('Error!!!! write fail')
+            self.setlog("Error! Write setting to ini file fail, "
+                        "please create UTF-16 format "+filename+" in tool path", 'error')
 
     def store_origin_file_to_backup_folder(self, file, back_folder):
         shutil.copy2(file, back_folder)
@@ -178,7 +227,7 @@ class replace_Sub_Gui(Frame):
                             sub_content_lv = subcontent_h.read()
                         except:
                             status_lv = False
-                            print("Error! can't read format:", i)
+                            self.setlog("Error! can't read format: " + i, 'error')
                             continue
                     # -----For GBK and GB2312 format-----
                     subcontent_h.close()
@@ -186,7 +235,9 @@ class replace_Sub_Gui(Frame):
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
                     # -----convert to TC language-----
+                    self.setlog("Convert: " + i, 'info')
                     tw_str_lv = langconver.s2tw(sub_content_lv)
+                    self.setlog("Replace font set: " + i)
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
                         subcontent_write_h = open(i, 'w', encoding='utf8')
@@ -200,7 +251,9 @@ class replace_Sub_Gui(Frame):
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
             # -----convert to TC language-----
+            self.setlog("Convert: "+i, 'info')
             tw_str_lv = langconver.s2tw(sub_content_lv)
+            self.setlog("Replace font set: "+i)
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
@@ -210,6 +263,10 @@ class replace_Sub_Gui(Frame):
         return status_lv
 
     def replace_all_sub_in_path(self):
+        # -----Clear text widge for log-----
+        self.log.config(state="normal")
+        self.log.delete('1.0', END)
+        self.log.config(state="disable")
         # -----Get user input path-----
         self.user_input_path = self.sub_path_entry.get()
         # -----Get user input file types and Split type string then store to list-----
@@ -232,10 +289,12 @@ class replace_Sub_Gui(Frame):
 
         # -----Store user input path and type into Setting.ini config file-----
         if not self.user_input_path == self.subpath_ini:
-            print("path not match, write new path to ini")
+            self.setlog("Write new path setting to: " + sub_setting_name, "info")
+            # print("path not match, write new path to ini")
             self.write_config(sub_setting_name,  'Global', 'subpath', self.user_input_path)
         if not self.user_input_type == self.subfiletype_list_ini:
-            print("type not match, write new type list to ini")
+            self.setlog("Write new type setting to: " + sub_setting_name, "info")
+            # print("type not match, write new type list to ini")
             self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
 
         # ----Split file type string and store to list-----
@@ -264,9 +323,11 @@ class replace_Sub_Gui(Frame):
         self.update_idletasks()
 
         if status:
-            tkinter.messagebox.showinfo("message", "Replace All Sub Done.")
+            self.setlog("***Success! Convert and Replace all file done.***", "info")
+            tkinter.messagebox.showinfo("message", "Convert and Replace all file done.")
         else:
-            tkinter.messagebox.showerror("message Error", "Error! Replace Sub error, please check log file.")
+            self.setlog("***Error! Convert and Replace file error, please check tne log.***", "error")
+            tkinter.messagebox.showerror("message Error", "Convert and Replace file error, please check the log.")
 
 
 def check_all_file_status():
@@ -274,13 +335,11 @@ def check_all_file_status():
         return False
     if not os.path.exists(sub_setting_name):
         return False
+    if not os.path.exists('icons\\main.ico'):
+        return False
     return True
 
-
-# -----Check database is correct or not-----
-if not check_all_file_status():
-    tkinter.messagebox.showinfo("message Error", "Error! SubList.sdb and Setting.ini not found or empty")
-else:
+try:
     # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
     # -----Get setting from Settings.ini-----
@@ -290,11 +349,23 @@ else:
     file_ini_h.close()
     subpath = config_h.get('Global', 'subpath')
     subfiletype_list = config_h.get('Global', 'subtype')
+except:
+    # messagebox will create empty windows if root tkinter isn't create, so create tkinter first
+    root = Tk()
+    root.title(title)
+    root.iconbitmap('icons\\main.ico')
+    app = replace_Sub_Gui(master=root, subfilepath_ini=subpath,
+                          subfiletype_ini=subfiletype_list, help_text=help_text)
 
-    # -----Start GUI-----
-    if __name__ == '__main__':
-        root = Tk()
-        root.title(title)
-        root.iconbitmap('icons\\main.ico')
-        app = replace_Sub_Gui(master=root, subfilepath_ini=subpath, subfiletype_ini=subfiletype_list, help_text=help_text)
-        app.mainloop()
+    tkinter.messagebox.showerror("Error", "necessary file is not found! Please re-install AJSub")
+    sys.exit(0)
+
+# -----Start GUI-----
+if __name__ == '__main__':
+    root = Tk()
+    root.title(title)
+    root.iconbitmap('icons\\main.ico')
+    app = replace_Sub_Gui(master=root, subfilepath_ini=subpath,
+                          subfiletype_ini=subfiletype_list, help_text=help_text)
+    # -----Start main loop-----
+    app.mainloop()
