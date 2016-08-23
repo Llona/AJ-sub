@@ -36,7 +36,8 @@ backup_folder_name = "backfile"
 subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
 progress_txt = "強力轉換中..."
-idle_txt = "zzz..."
+progress_idle_txt = ""
+progress_done_txt = "轉換完成!!"
 help_text = \
     "AJSub "+version+"\n\n"\
     "   本軟體會自動將指定目錄下的所有字幕檔簡體轉為繁體\n"\
@@ -82,8 +83,8 @@ class replace_Sub_Gui(Frame):
         self.empty_label = Label(self)
         self.version_label = Label(self)
         self.version_state = Label(self)
-        # self.log = Text(self, state="disabled")
-        self.log = ScrolledText(self, xscrollcommand=VERTICAL, wrap='none', state="disabled")
+        self.hide_log_button = Button(self)
+        self.log = ScrolledText(self, wrap='none', state="disabled")
 
         self.create_widgets()
 
@@ -130,14 +131,23 @@ class replace_Sub_Gui(Frame):
         self.version_label["state"] = 'disable'
         self.version_label.grid(row=4, column=6, columnspan=2)
         # -----Label state-----
-        self.version_state["text"] = ""
-        self.version_state["width"] = 15
-        self.version_state.grid(row=4, column=0, columnspan=2, sticky='w')
+        self.version_state["text"] = progress_idle_txt
+        self.version_state["width"] = 10
+        self.version_state.grid(row=4, column=0, columnspan=1, sticky='SNWE')
         # self.version_state.grid(row=3, column=0, sticky='w')
         # -----Text log-----
         self.log["width"] = 60
         self.log["font"] = ("Purisa", 10)
-        self.log.grid(row=5, column=0, columnspan=10, sticky='NSWE')
+        self.log.grid_forget()
+        # -----Button Hide log-----
+        self.hide_log_button["text"] = "Hide Log"
+        self.hide_log_button["command"] = self.hide_log_widge
+
+    def hide_log_widge(self):
+        self.log.grid_forget()
+        self.hide_log_button.grid_forget()
+        self.version_state["text"] = progress_idle_txt
+        # self.update_idletasks()
 
     def press_key_enter(self, event):
         self.replace_all_sub_in_path()
@@ -274,11 +284,18 @@ class replace_Sub_Gui(Frame):
         return status_lv
 
     def replace_all_sub_in_path(self):
+        status = False
         w_file_stat_lv = error_Type.NORMAL
+
+        # -----Show log widge-----
+        if not self.log.grid_info():
+            self.log.grid(row=5, column=0, columnspan=10, sticky='WE')
+            self.hide_log_button.grid(row=6, column=0)
         # -----Clear text widge for log-----
         self.log.config(state="normal")
         self.log.delete('1.0', END)
         self.log.config(state="disable")
+
         # -----Get user input path-----
         self.user_input_path = self.sub_path_entry.get()
         # -----Get user input file types and Split type string then store to list-----
@@ -290,7 +307,6 @@ class replace_Sub_Gui(Frame):
         if not os.path.exists(self.user_input_path):
             tkinter.messagebox.showerror("message", "Error! can't find sub path")
             return
-
         # -----get config ini file setting-----
         self.subpath_ini = self.read_config(sub_setting_name, 'Global', 'subpath')
         self.subfiletype_list_ini = self.read_config(sub_setting_name, 'Global', 'subtype')
@@ -313,7 +329,6 @@ class replace_Sub_Gui(Frame):
             self.setlog("Write new type setting to: " + sub_setting_name, "info")
             # print("type not match, write new type list to ini")
             w_file_stat_lv = self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
-
         if w_file_stat_lv == error_Type.FILE_ERROR:
             tkinter.messagebox.showerror("Error",
                                          "Error! Write setting ini file fail! "
@@ -340,7 +355,8 @@ class replace_Sub_Gui(Frame):
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
 
         # -----Set button and progressing state to normal-----
-        self.version_state["text"] = ""
+        self.version_state["text"] = progress_done_txt
+        self.version_state["fg"] = "blue"
         self.start_button["state"] = 'normal'
         self.help_button["state"] = 'normal'
         self.update_idletasks()
