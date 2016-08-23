@@ -15,3 +15,9 @@ v4.02.02, 2016/8/12
 V4.02.03, 2016/8/18
 1. Modify About, Readme,  content, NOTICE.txt...contents
 2. Change spec. file for build one-file type executable
+
+V4.03.00, 2016/08/23
+1. Add log widge and print log into log widge
+2. Add convert clipboard function
+3. Modify main process for error handling
+4. Add R/W setting file error handling
