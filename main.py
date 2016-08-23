@@ -49,7 +49,8 @@ help_text = \
     "   1. 將字幕檔路徑輸入SUB type欄位\n"\
     "   2. 輸入字幕檔類型並用逗點隔開, 如*.ass, *.ssa\n"\
     "   3. 按下Start之後, enjoy it!!!!\n"\
-    "   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n\n"\
+    "   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n"\
+    "   5. 按下Convert Clipboard後, 直接將剪貼簿的內容轉換為繁體\n\n"\
     "AJSub "+version+"\n"\
     "Copyright 2016\n\n"\
     "Implement by [Llona](https://github.com/Llona/AJ-sub).\n\n"\
