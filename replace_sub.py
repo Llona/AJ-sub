@@ -41,7 +41,7 @@ def get_file_list(sub_path, file_type):
     # os.chdir(sub_path)
 
     for i in file_type:
-        subtemp_list_ll = glob.glob(sub_path+'\\'+i)
+        subtemp_list_ll = glob.glob('%s\\%s' % (sub_path, i))
         # subtemp_list_ll = glob.glob( i)
         if subtemp_list_ll:
             subfile_list_ll.extend(subtemp_list_ll)

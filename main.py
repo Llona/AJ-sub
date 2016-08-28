@@ -14,6 +14,7 @@ Ver 4.3.0 -
     2. Add convert clipboard function
     3. Modify main process for error handling
     4. Add R/W setting file error handling
+Ver 4.3.5 - Add rename sub file to match video file name
 """
 
 from tkinter import *
@@ -22,14 +23,17 @@ import re
 import configparser
 import os
 import shutil
-from tkinter.scrolledtext import ScrolledText
+# from tkinter.scrolledtext import ScrolledText
+# from time import sleep
+# from tkinter.commondialog import Dialog
 from enum import Enum
 
 import replace_sub
 import langconver
+import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.03.00"
+version = "v4.03.50"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -67,6 +71,7 @@ class error_Type(Enum):
 class replace_Sub_Gui(Frame):
     def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None, help_text=None):
         Frame.__init__(self, master)
+        self.master = master
         self.subfiletype_list_ini = subfiletype_ini
         self.subpath_ini = subfilepath_ini
         self.help_text = help_text
@@ -78,6 +83,7 @@ class replace_Sub_Gui(Frame):
         self.sub_path_entry = Entry(self)
         self.sub_type_label = Label(self)
         self.sub_type_entry = Entry(self)
+        self.rename_button = Button(self)
         self.start_button = Button(self)
         self.help_button = Button(self)
         self.clip_button = Button(self)
@@ -85,16 +91,21 @@ class replace_Sub_Gui(Frame):
         self.version_label = Label(self)
         self.version_state = Label(self)
         self.hide_log_button = Button(self)
-        self.log = ScrolledText(self, wrap='none', state="disabled")
-
-        self.create_widgets()
+        # self.log_txt = ScrolledText(self, wrap='none', state="disabled")
+        self.ren_frame_oriview_txt = Text(self, wrap='none', state="disabled")
+        self.vert_scrollbar = Scrollbar(self, orient=VERTICAL)
+        self.hor_scrollbar = Scrollbar(self, orient='horizontal')
+        self.log_txt = Text(self, wrap='none', state="disabled",
+                            yscrollcommand=self.vert_scrollbar.set, xscrollcommand=self.hor_scrollbar.set)
 
         # -----Set Text log fone color-----
-        self.log.tag_config("error", foreground="#CC0000")
-        self.log.tag_config("info", foreground="#008800")
-        self.log.tag_config("info2", foreground="#404040")
+        self.log_txt.tag_config("error", foreground="#CC0000")
+        self.log_txt.tag_config("info", foreground="#008800")
+        self.log_txt.tag_config("info2", foreground="#404040")
 
         root.bind('<Key-Return>', self.press_key_enter)
+
+        self.create_widgets()
 
     def create_widgets(self):
         # -----First input entry-----
@@ -109,9 +120,15 @@ class replace_Sub_Gui(Frame):
         self.sub_type_entry["width"] = 60
         self.sub_type_entry.insert(0, self.subfiletype_list_ini)
         self.sub_type_entry.grid(row=1, column=1, columnspan=6)
+        # -----Button Rename-----
+        self.rename_button["text"] = "Sub Rename"
+        # self.rename_button["width"] = 5
+        # self.rename_button["command"] = self.show_rename_frame
+        self.rename_button["command"] = self.show_rename_frame
+        self.rename_button.grid(row=2, column=0, columnspan=2)
         # -----Button Start-----
         self.start_button["text"] = "Start"
-        self.start_button["width"] = 5
+        # self.start_button["width"] = 5
         self.start_button["command"] = self.replace_all_sub_in_path
         self.start_button.grid(row=2, column=2, columnspan=2)
         # -----Button Help-----
@@ -135,20 +152,32 @@ class replace_Sub_Gui(Frame):
         self.version_state["text"] = progress_idle_txt
         self.version_state["width"] = 10
         self.version_state.grid(row=4, column=0, columnspan=1, sticky='SNWE')
-        # self.version_state.grid(row=3, column=0, sticky='w')
         # -----Text log-----
-        self.log["width"] = 60
-        self.log["font"] = ("Purisa", 10)
-        self.log.grid_forget()
+        self.log_txt["width"] = 60
+        self.log_txt["font"] = ("Purisa", 10)
+        self.log_txt.grid(row=5, column=0, columnspan=8, sticky='WE')
+        # -----Scrollbar for log text wiege-----
+        self.hor_scrollbar.config(command=self.log_txt.xview)
+        self.vert_scrollbar.config(command=self.log_txt.yview)
+        self.vert_scrollbar.grid(row=5, column=7, columnspan=8, sticky='NS')
+        self.hor_scrollbar.grid(row=6, column=0, columnspan=8, sticky='EW')
         # -----Button Hide log-----
         self.hide_log_button["text"] = "Hide Log"
         self.hide_log_button["command"] = self.hide_log_widge
+        self.hide_log_button.grid(row=7, column=0)
+
+        self.update_idletasks()
+
+    def show_rename_frame(self):
+        ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
 
     def hide_log_widge(self):
-        self.log.grid_forget()
-        self.hide_log_button.grid_forget()
+        self.log_txt.grid_remove()
+        self.vert_scrollbar.grid_remove()
+        self.hor_scrollbar.grid_remove()
+        self.hide_log_button.grid_remove()
         self.version_state["text"] = progress_idle_txt
-        # self.update_idletasks()
+        self.update_idletasks()
 
     def press_key_enter(self, event):
         self.replace_all_sub_in_path()
@@ -162,36 +191,42 @@ class replace_Sub_Gui(Frame):
     def print_about(self):
         tkinter.messagebox.showinfo("About", self.help_text)
 
-    def create_popup(self):
-        pass
-        # self.top_window = Toplevel()
-        # self.top_window.overrideredirect(1)
-        # msg = Label(self.top_window, text="轉換工作進行中...")
-        # root.update_idletasks()
-        # msg.pack(side=TOP, anchor=W, fill=X, expand=YES)
-        # self.top_window['takefocus'] = True
-        # self.top_window.grab_set()
-        # self.top_window.focus_force()
-        # msg.focus()
-        # msg.grab_set()
-        # root.update_idletasks()
-
-    def close_popup(self):
-        # self.top_window.destroy()
-        pass
+    # def create_popup(self):
+    #     pass
+    #     # self.top_window = Toplevel()
+    #     # self.top_window.overrideredirect(1)
+    #     # msg = Label(self.top_window, text="轉換工作進行中...")
+    #     # root.update_idletasks()
+    #     # msg.pack(side=TOP, anchor=W, fill=X, expand=YES)
+    #     # self.top_window['takefocus'] = True
+    #     # self.top_window.grab_set()
+    #     # self.top_window.focus_force()
+    #     # msg.focus()
+    #     # msg.grab_set()
+    #     # root.update_idletasks()
+    #
+    # def close_popup(self):
+    #     # self.top_window.destroy()
+    #     pass
 
     def setlog(self, string, level=None):
-        self.log.config(state="normal")
+        self.log_txt.config(state="normal")
 
         if (level != 'error') and (level != 'info') and (level != 'info2'):
             level = ""
 
-        self.log.insert(INSERT, string + "\n", level)
+        self.log_txt.insert(INSERT, string + "\n", level)
         # -----scroll to end of text widge-----
-        self.log.see(END)
+        self.log_txt.see(END)
         self.update_idletasks()
 
-        self.log.config(state="disabled")
+        self.log_txt.config(state="disabled")
+
+    def setlog_large(self, string, level=None):
+        self.log_txt.insert(INSERT, string + "\n", level)
+        # -----scroll to end of text widge-----
+        self.log_txt.see(END)
+        self.update_idletasks()
 
     def read_config(self, filename, section, key):
         try:
@@ -226,8 +261,9 @@ class replace_Sub_Gui(Frame):
 
     def conv_and_replace_sub_write_file(self, subfile_list, subdata_dic):
         status_lv = True
-
-        for i in subfile_list:
+        self.log_txt.config(state="normal")
+        subfile_list_lt = tuple(subfile_list)
+        for i in subfile_list_lt:
             # -----Test sub file format-----
             try:
                 subcontent_h = open(i, 'r+', encoding='utf8')
@@ -257,9 +293,9 @@ class replace_Sub_Gui(Frame):
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
                     # -----convert to TC language-----
-                    self.setlog("Convert: " + i)
+                    self.setlog_large("Convert: " + i)
                     tw_str_lv = langconver.s2tw(sub_content_lv)
-                    self.setlog("Replace font set: " + i, 'info2')
+                    self.setlog_large("Replace font set: " + i, 'info2')
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
                         subcontent_write_h = open(i, 'w', encoding='utf8')
@@ -273,15 +309,17 @@ class replace_Sub_Gui(Frame):
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
             # -----convert to TC language-----
-            self.setlog("Convert: "+i)
+            self.setlog_large("Convert: "+i)
             tw_str_lv = langconver.s2tw(sub_content_lv)
-            self.setlog("Replace font set: "+i, 'info2')
+            self.setlog_large("Replace font set: "+i, 'info2')
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
                 subcontent_h.seek(0, 0)
                 subcontent_h.write(tw_str_lv)
             subcontent_h.close()
+
+        self.log_txt.config(state="disable")
         return status_lv
 
     def replace_all_sub_in_path(self):
@@ -289,13 +327,15 @@ class replace_Sub_Gui(Frame):
         w_file_stat_lv = error_Type.NORMAL
 
         # -----Show log widge-----
-        if not self.log.grid_info():
-            self.log.grid(row=5, column=0, columnspan=10, sticky='WE')
-            self.hide_log_button.grid(row=6, column=0)
+        if not self.log_txt.grid_info():
+            self.log_txt.grid()
+            self.vert_scrollbar.grid()
+            self.hor_scrollbar.grid()
+            self.hide_log_button.grid()
         # -----Clear text widge for log-----
-        self.log.config(state="normal")
-        self.log.delete('1.0', END)
-        self.log.config(state="disable")
+        self.log_txt.config(state="normal")
+        self.log_txt.delete('1.0', END)
+        self.log_txt.config(state="disable")
 
         # -----Get user input path-----
         self.user_input_path = self.sub_path_entry.get()
@@ -339,16 +379,20 @@ class replace_Sub_Gui(Frame):
         # ----Split file type string and store to list-----
         re_lv = re.sub(r' ', '', self.user_input_type)
         self.user_input_type = re_lv.split(",")
+        # -----remove duplicate item-----
+        self.user_input_type = set(self.user_input_type)
+        # print(self.user_input_type)
 
         # -----Dim button for string converting-----
         self.version_state["text"] = progress_txt
         self.version_state["fg"] = "blue"
         self.start_button["state"] = 'disable'
-        self.help_button["state"] = 'disable'
+        # self.help_button["state"] = 'disable'
         self.update_idletasks()
 
         # -----Get sub file list by type-----
         sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
+        # print(sub_file_list)
         # -----make backup folder for store origin sub files-----
         if not os.path.exists(self.user_input_path+'\\'+backup_folder_name):
             os.makedirs(self.user_input_path+'\\'+backup_folder_name)
@@ -359,7 +403,7 @@ class replace_Sub_Gui(Frame):
         self.version_state["text"] = progress_done_txt
         self.version_state["fg"] = "blue"
         self.start_button["state"] = 'normal'
-        self.help_button["state"] = 'normal'
+        # self.help_button["state"] = 'normal'
         self.update_idletasks()
 
         if status:
@@ -402,9 +446,11 @@ if __name__ == '__main__':
         file_ini_h.close()
         subpath = config_h.get('Global', 'subpath')
         subfiletype_list = config_h.get('Global', 'subtype')
+        config_h.clear()
     except:
-        tkinter.messagebox.showerror("Error", "Read setting fail " + sub_setting_name + " or " + sub_database_name + " fail!\n"
-                                              "Please check these file is correct (unicode format) or re-install AJSub")
+        tkinter.messagebox.showerror("Error",
+                                     "Read setting fail " + sub_setting_name + " or " + sub_database_name + " fail!\n"
+                                     "Please check these file is correct (unicode format) or re-install AJSub")
         sys.exit(0)
 
     # -----Get database list to dic structure-----
