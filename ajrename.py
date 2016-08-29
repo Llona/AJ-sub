@@ -10,6 +10,7 @@ from enum import Enum
 # from datetime import datetime
 from threading import Timer
 from collections import OrderedDict
+import time
 
 
 class error_Code(Enum):
@@ -27,7 +28,8 @@ class rename_frame():
     def __init__(self, parent, path, type, setting_name):
         self.path = path
         self.type = type
-        self.ori_and_ren_subfile_dic = {}
+        self.mapping_orisub_and_video_odic = OrderedDict()
+        self.mapping_orisub_and_sub_odic = OrderedDict()
         self.app_current_path_lv = os.getcwd()
         # -----Timer-----
         self.timer_running_fl = False
@@ -200,16 +202,20 @@ class rename_frame():
         self.view_txt.delete('1.0', END)
         self.view_txt.config(state="disable")
 
+        # -----Clear previous mapping result-----
+        self.mapping_orisub_and_video_odic.clear()
+        self.mapping_orisub_and_video_odic.clear()
+
         [status, sub_path_lv, sub_type_lv, video_path_lv, video_type_lv, sub_keyword_lv, video_keywork_lv] = \
             self.arrange_user_input_format()
 
-        print(status)
+        # print(status)
         if status == error_Code.NORMAL.value:
             for sub_type_i in sub_type_lv:
-                [mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic] =\
-                    self.match_sub_and_video_file(sub_path_lv, sub_type_i, video_path_lv, video_type_lv,
-                                                  sub_keyword_lv, video_keywork_lv)
-                self.show_list_on_view_text(mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic)
+                self.match_sub_and_video_file(sub_path_lv, sub_type_i, video_path_lv, video_type_lv,
+                                              sub_keyword_lv, video_keywork_lv)
+            self.show_list_on_view_text(self.mapping_orisub_and_video_odic, self.mapping_orisub_and_sub_odic)
+
 
     # def set_txtview_text(self, string, level=None):
         # self.view_txt.config(state="normal")
@@ -237,8 +243,8 @@ class rename_frame():
         user_input_sub_path_lv = re.sub(r"/$", '', self.sub_path_entry.get())
         user_input_sub_path_lv = re.sub(r"\\$", "", self.sub_path_entry.get())
 
-        user_input_video_path_lv = re.sub(r"/$", '', self.sub_path_entry.get())
-        user_input_video_path_lv = re.sub(r"\\$", "", self.sub_path_entry.get())
+        user_input_video_path_lv = re.sub(r"/$", '', self.video_path_entry.get())
+        user_input_video_path_lv = re.sub(r"\\$", "", self.video_path_entry.get())
 
         if not os.path.exists(user_input_sub_path_lv):
             status_lv = error_Code.USER_SUB_INPUT_PATH_ERROR.value
@@ -300,19 +306,20 @@ class rename_frame():
                                      % (re.escape(sub_key_re_h.group(1)), re.escape(sub_key_re_h.group(2))))
 
         # -----get video file list-----
-        # os.chdir(u_in_video_path)
+        os.chdir(u_in_video_path)
         # glob.glob(sub_path + '\\' + i)
         for i in u_in_video_type:
-            # temp_list_lv = glob.glob(i)
+            temp_list_lv = glob.glob(i)
             # temp_list_lv = glob.glob(u_in_video_path + '\\' + i)
-            temp_list_lv = glob.glob('%s\\%s' % (u_in_video_path, i))
+            # temp_list_lv = glob.glob('%s\\%s' % (u_in_video_path, i))
             if temp_list_lv:
                 temp_file_list_ll.extend(temp_list_lv)
 
         # -----remove video filename extension and save list to ordered dict-----
-        # ToDo: 與c = os.path.splitext(fname), print(c[0], c[1])比較速度
         for i in temp_file_list_ll:
-            videofile_list_odic[i] = re.sub(r"\..*$", '', i)
+            c = os.path.splitext(i)
+            videofile_list_odic[i] = c[0]
+            # print(c[0], c[1])
 
         temp_file_list_ll.clear()
         temp_list_lv.clear()
@@ -320,10 +327,10 @@ class rename_frame():
         # print(video_key_re_h.group(2))
 
         # -----get sub file list-----
-        # os.chdir(u_in_sub_path)
+        os.chdir(u_in_sub_path)
 
-        # temp_list_lv = glob.glob(u_in_sub_type)
-        temp_list_lv = glob.glob('%s\\%s' % (u_in_sub_path, u_in_sub_type))
+        temp_list_lv = glob.glob(u_in_sub_type)
+        # temp_list_lv = glob.glob('%s\\%s' % (u_in_sub_path, u_in_sub_type))
         print(temp_list_lv)
         sub_type_fil_ext = u_in_sub_type.replace("*.", "")
         if temp_list_lv:
@@ -333,33 +340,48 @@ class rename_frame():
             # subfile_list_ls = tuple(subfile_list_ls)
             subfile_list_odic[i] = ""
 
-         # -----Free memory-----
-        del temp_file_list_ll
-        del temp_list_lv
+        if subfile_list_odic and videofile_list_odic:
+            print("start mapping video and sub")
+             # -----Free memory-----
+            del temp_file_list_ll
+            del temp_list_lv
 
-        # -----save mapping table to dic-----
-        for s_name_j in subfile_list_odic:
-            mapping_state_lv = 0
-            s_key_lv = list(map(int, (subnum_re_h.findall(s_name_j))))
-            # print(s_key_lv)
-            # s_key_lv = ''.join(subnum_re_h.findall)
-            for v_fullname_i, v_name_nonext_j in videofile_list_odic.items():
-                v_key_lv = list(map(int, (videonum_re_h.findall(v_name_nonext_j))))
+            # -----save mapping table to dic-----
+            for s_name_j in subfile_list_odic:
+                mapping_state_lv = 0
+                # s_key_lv = list(map(int, (subnum_re_h.findall(s_name_j))))
+                s_key_lv = subnum_re_h.findall(s_name_j)
+                if s_key_lv:
+                    s_key_lv = list(map(int, s_key_lv))
+                else:
+                    continue
                 # print(s_key_lv)
-                if v_key_lv == s_key_lv:
-                    mapping_state_lv = 1
-                    # mapping_orisub_and_video_odic.update({v_name_i: s_name_j})
-                    mapping_orisub_and_video_odic[s_name_j] = v_fullname_i
-                    mapping_orisub_and_sub_odic[s_name_j] = "%s.%s" % (v_name_nonext_j, sub_type_fil_ext)
-                    break
+                # s_key_lv = ''.join(subnum_re_h.findall)
+                for v_fullname_i, v_name_nonext_j in videofile_list_odic.items():
+                    # print(v_name_nonext_j)
+                    # v_key_lv = list(map(int, (videonum_re_h.findall(v_name_nonext_j))))
+                    v_key_lv = subnum_re_h.findall(v_name_nonext_j)
+                    if v_key_lv:
+                        v_key_lv = list(map(int, v_key_lv))
+                    else:
+                        break
+                    print(v_key_lv)
+                    if v_key_lv == s_key_lv and v_key_lv:
+                        mapping_state_lv = 1
+                        # mapping_orisub_and_video_odic.update({v_name_i: s_name_j})
+                        mapping_orisub_and_video_odic[s_name_j] = v_fullname_i
+                        mapping_orisub_and_sub_odic[s_name_j] = "%s.%s" % (v_name_nonext_j, sub_type_fil_ext)
+                        break
 
-            # -----Remove matched video file list for speedup-----
-            if mapping_state_lv == 1:
-                videofile_list_odic.pop(v_fullname_i, "key not found")
-                # for t, c in videofile_list_odic.items():
-                #     print(t, c)
+                # -----Remove matched video file list for speedup-----
+                if mapping_state_lv == 1:
+                    videofile_list_odic.pop(v_fullname_i, "key not found")
+                    # for t, c in videofile_list_odic.items():
+                    #     print(t, c)
 
-        return mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
+        # return mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
+        self.mapping_orisub_and_video_odic.update(mapping_orisub_and_video_odic)
+        self.mapping_orisub_and_sub_odic.update(mapping_orisub_and_sub_odic)
         # self.show_list_on_view_text(mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic)
 
         # self.view_txt.config(state="normal")
@@ -367,9 +389,8 @@ class rename_frame():
         #     print(j, p)
         #     self.view_txt.insert(INSERT, j + "\n")
         #     self.view_txt.insert(INSERT, j + "\n", 'info')
-        #
-        # self.view_txt.config(state="disable")
 
+        # self.view_txt.config(state="disable")
 
     def show_list_on_view_text(self, mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic):
         # print (mapping_orisub_and_sub_odic[])
@@ -380,7 +401,7 @@ class rename_frame():
             self.view_txt.insert(INSERT, i + "\n")
             self.view_txt.insert(INSERT, j + "\n")
             self.view_txt.insert(INSERT, mapping_orisub_and_sub_odic[i] + "\n", 'info')
-            # print(j)
+            print(i, mapping_orisub_and_sub_odic[i])
         self.view_txt.config(state="disable")
 
 

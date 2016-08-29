@@ -77,6 +77,7 @@ class replace_Sub_Gui(Frame):
         self.help_text = help_text
         self.user_input_path = ""
         self.user_input_type = ""
+        self.app_current_path_lv = os.getcwd()
         self.grid()
         # -----Define all GUI item-----
         self.sub_path_label = Label(self)
@@ -293,9 +294,9 @@ class replace_Sub_Gui(Frame):
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
                     # -----convert to TC language-----
-                    self.setlog_large("Convert: " + i)
+                    self.setlog_large("Convert: %s" % i)
                     tw_str_lv = langconver.s2tw(sub_content_lv)
-                    self.setlog_large("Replace font set: " + i, 'info2')
+                    self.setlog_large("Replace font set: %s" % i, 'info2')
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
                         subcontent_write_h = open(i, 'w', encoding='utf8')
@@ -305,13 +306,13 @@ class replace_Sub_Gui(Frame):
                     continue
 
             # -----backup origin sub file to backup folder-----
-            self.store_origin_file_to_backup_folder(i, self.user_input_path + '\\' + backup_folder_name)
+            self.store_origin_file_to_backup_folder(i, '%s\\%s' % (self.user_input_path, backup_folder_name))
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
             # -----convert to TC language-----
-            self.setlog_large("Convert: "+i)
+            self.setlog_large("Convert: %s" % i)
             tw_str_lv = langconver.s2tw(sub_content_lv)
-            self.setlog_large("Replace font set: "+i, 'info2')
+            self.setlog_large("Replace font set: %s" % i, 'info2')
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
