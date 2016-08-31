@@ -10,7 +10,8 @@ from enum import Enum
 # from datetime import datetime
 from threading import Timer
 from collections import OrderedDict
-import time
+import difflib
+# import time
 
 
 class error_Code(Enum):
@@ -24,13 +25,14 @@ class error_Code(Enum):
     USER_SUB_INPUT_KEYWORD_ERROR = 7
 
 
-class rename_frame():
-    def __init__(self, parent, path, type, setting_name):
-        self.path = path
-        self.type = type
+class rename_frame:
+    def __init__(self, parent, main_sub_path, main_sub_type, setting_name):
+        self.main_sub_path = main_sub_path
+        self.main_sub_type = main_sub_type
         self.mapping_orisub_and_video_odic = OrderedDict()
         self.mapping_orisub_and_sub_odic = OrderedDict()
-        self.app_current_path_lv = os.getcwd()
+        self.app_current_path = os.getcwd()
+        self.radiobutton_select = IntVar()
         # -----Timer-----
         self.timer_running_fl = False
         self.start_timer = 0
@@ -63,6 +65,10 @@ class rename_frame():
                              yscrollcommand=self.vert_scrollbar.set, xscrollcommand=self.hor_scrollbar.set)
         self.view_txt = Text(self.top_window, wrap='none', state="disabled",
                              yscrollcommand=self.vert_scrollbar.set, xscrollcommand=self.hor_scrollbar.set)
+
+        self.default_radio = Radiobutton(self.top_window, text="預設模式", variable=self.radiobutton_select, value=1)
+        self.strengthen_radio = Radiobutton(self.top_window, text="強力模式", variable=self.radiobutton_select, value=2)
+        self.manually_radio = Radiobutton(self.top_window, text="手動模式", variable=self.radiobutton_select, value=3)
         # -----Register for handler and key event-----
         # make the top right close button minimize (iconify) the main window
         self.top_window.protocol("WM_DELETE_WINDOW", self.close_ren_frame)
@@ -90,25 +96,24 @@ class rename_frame():
             # print(self.videopath_ini, self.videokeyword_ini, self.subkeyword_ini)
             config_file_h.clear()
         except:
-            tkinter.messagebox.showerror("Error",
-                                         "Read setting fail " + setting_name+" fail!\n"
-                                         "Please check" + setting_name+" setting file is correct (unicode format) or re-install AJSub")
+            tkinter.messagebox.showerror("Error", "Read setting fail " + setting_name+" fail!\n"
+                                         "Please check " + setting_name +
+                                         " setting file is correct (unicode format) or re-install AJSub")
 
         self.show_rename_frame()
-
 
     def show_rename_frame(self):
         # -----Sub file input entry-----
         self.sub_path_label["text"] = "SUB Path:"
         self.sub_path_label.grid(row=3, column=0)
         self.sub_path_entry["width"] = 60
-        self.sub_path_entry.insert(3, self.path)
+        self.sub_path_entry.insert(3, self.main_sub_path)
         self.sub_path_entry.grid(row=3, column=1, columnspan=6)
         # -----Sub file type entry-----
         self.sub_type_label["text"] = "SUB type:"
         self.sub_type_label.grid(row=4, column=0)
         self.sub_type_entry["width"] = 60
-        self.sub_type_entry.insert(0, self.type)
+        self.sub_type_entry.insert(0, self.main_sub_type)
         self.sub_type_entry.grid(row=4, column=1, columnspan=6)
         # -----Video file path entry-----
         self.video_path_label["text"] = "Video Path:"
@@ -139,6 +144,11 @@ class rename_frame():
         # self.rename_button["width"] = 5
         # self.start_button["command"] = self.start_rename
         self.start_button.grid(row=9, column=1, columnspan=1)
+        # -----Default mapping Radiobutton-----
+        self.default_radio.grid(row=10, column=0)
+        self.strengthen_radio.grid(row=10, column=1)
+        self.manually_radio.grid(row=10, column=2)
+        self.strengthen_radio.select()  # default uses default mapping method
 
         # self.lb1 = tk.Listbox(master, yscrollcommand=scrollbar.set)
         # self.lb2 = tk.Listbox(master, yscrollcommand=scrollbar.set)
@@ -197,7 +207,7 @@ class rename_frame():
             self.stop_count_timer()
             self.start_count_timer(1)
 
-    def show_preview_on_textview(self, event=None):
+    def show_preview_on_textview(self):
         self.view_txt.config(state="normal")
         self.view_txt.delete('1.0', END)
         self.view_txt.config(state="disable")
@@ -212,10 +222,9 @@ class rename_frame():
         # print(status)
         if status == error_Code.NORMAL.value:
             for sub_type_i in sub_type_lv:
-                self.match_sub_and_video_file(sub_path_lv, sub_type_i, video_path_lv, video_type_lv,
-                                              sub_keyword_lv, video_keywork_lv)
+                self.match_sub_and_video_file_update_odic(sub_path_lv, sub_type_i, video_path_lv, video_type_lv,
+                                                          sub_keyword_lv, video_keywork_lv)
             self.show_list_on_view_text(self.mapping_orisub_and_video_odic, self.mapping_orisub_and_sub_odic)
-
 
     # def set_txtview_text(self, string, level=None):
         # self.view_txt.config(state="normal")
@@ -241,10 +250,10 @@ class rename_frame():
 
         # ----user input sub path-----
         user_input_sub_path_lv = re.sub(r"/$", '', self.sub_path_entry.get())
-        user_input_sub_path_lv = re.sub(r"\\$", "", self.sub_path_entry.get())
+        user_input_sub_path_lv = re.sub(r"\\$", "", user_input_sub_path_lv)
 
         user_input_video_path_lv = re.sub(r"/$", '', self.video_path_entry.get())
-        user_input_video_path_lv = re.sub(r"\\$", "", self.video_path_entry.get())
+        user_input_video_path_lv = re.sub(r"\\$", "", user_input_video_path_lv)
 
         if not os.path.exists(user_input_sub_path_lv):
             status_lv = error_Code.USER_SUB_INPUT_PATH_ERROR.value
@@ -277,33 +286,23 @@ class rename_frame():
             status_lv = error_Code.USER_VIDEO_INPUT_KEYWORD_ERROR.value
 
         return status_lv, user_input_sub_path_lv, user_input_sub_type_ls, user_input_video_path_lv, \
-               user_input_video_type_ls, user_input_sub_keyword_lv, user_input_video_keyword_lv
+                user_input_video_type_ls, user_input_sub_keyword_lv, user_input_video_keyword_lv
 
-    def match_sub_and_video_file(self, u_in_sub_path, u_in_sub_type, u_in_video_path, u_in_video_type,
-                                 u_in_sub_keyword, u_in_video_keywork):
+    def match_sub_and_video_file_update_odic(self, u_in_sub_path, u_in_sub_type, u_in_video_path, u_in_video_type,
+                                             u_in_sub_keyword, u_in_video_keywork):
         temp_file_list_ll = []
-        # subfile_list_ls = []
+        videofile_list_ll = []
+        sub_file_list_ll = []
         videofile_list_odic = OrderedDict()
         subfile_list_odic = OrderedDict()
-        # -----user two orderedDice to store ori sub , video and rename sub file-----
-        # -----these two orderDice uses the same key: orisub-----
+        # -----user two orderedDice to store ori sub , video and rename sub file,
+        # these two orderDice uses the same key: orisub-----
         mapping_orisub_and_video_odic = OrderedDict()
         mapping_orisub_and_sub_odic = OrderedDict()
         videonum_re_h = ''
         subnum_re_h = ''
         temp_list_lv = ''
-        sub_type_fil_ext =''
-
-        # -----Generate video keyword compile-----
-        video_key_re_h = re.match(r'(.+)\*(.+)', u_in_video_keywork)
-        if video_key_re_h:
-            videonum_re_h = re.compile(r'%s(.*)%s'
-                                       % (re.escape(video_key_re_h.group(1)), re.escape(video_key_re_h.group(2))))
-        # -----Generate video keyword compile-----
-        sub_key_re_h = re.match(r'(.+)\*(.+)', u_in_sub_keyword)
-        if sub_key_re_h:
-            subnum_re_h = re.compile(r'%s(.*)%s'
-                                     % (re.escape(sub_key_re_h.group(1)), re.escape(sub_key_re_h.group(2))))
+        # sub_type_fil_ext = ''
 
         # -----get video file list-----
         os.chdir(u_in_video_path)
@@ -313,39 +312,92 @@ class rename_frame():
             # temp_list_lv = glob.glob(u_in_video_path + '\\' + i)
             # temp_list_lv = glob.glob('%s\\%s' % (u_in_video_path, i))
             if temp_list_lv:
-                temp_file_list_ll.extend(temp_list_lv)
+                videofile_list_ll.extend(temp_list_lv)
 
-        # -----remove video filename extension and save list to ordered dict-----
-        for i in temp_file_list_ll:
-            c = os.path.splitext(i)
-            videofile_list_odic[i] = c[0]
-            # print(c[0], c[1])
-
-        temp_file_list_ll.clear()
-        temp_list_lv.clear()
-        # print(video_key_re_h.group(1))
-        # print(video_key_re_h.group(2))
 
         # -----get sub file list-----
         os.chdir(u_in_sub_path)
 
         temp_list_lv = glob.glob(u_in_sub_type)
         # temp_list_lv = glob.glob('%s\\%s' % (u_in_sub_path, u_in_sub_type))
-        print(temp_list_lv)
+        # print(temp_list_lv)
         sub_type_fil_ext = u_in_sub_type.replace("*.", "")
         if temp_list_lv:
-            temp_file_list_ll.extend(temp_list_lv)
+            sub_file_list_ll.extend(temp_list_lv)
 
-        for i in temp_file_list_ll:
+        for i in sub_file_list_ll:
             # subfile_list_ls = tuple(subfile_list_ls)
             subfile_list_odic[i] = ""
 
+        # -----Free memory-----
+        del temp_file_list_ll
+        del temp_list_lv
+
+        # -----change to tuple type for speed up-----
+        sub_file_list_ll = tuple(sub_file_list_ll)
+        videofile_list_ll = tuple(videofile_list_ll)
+
+        # -----default matching method-----
+        if self.radiobutton_select.get() == 1:
+            if sub_file_list_ll and videofile_list_ll:
+                print("default mapping method, start mapping video and sub")
+
+                count = 0
+                for i in sub_file_list_ll:
+                    c = os.path.splitext(videofile_list_ll[count])
+                    mapping_orisub_and_video_odic[i] = videofile_list_ll[count]
+                    mapping_orisub_and_sub_odic[i] = "%s.%s" % (c[0], sub_type_fil_ext)
+                    count += 1
+
+                # update mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
+                self.mapping_orisub_and_video_odic.update(mapping_orisub_and_video_odic)
+                self.mapping_orisub_and_sub_odic.update(mapping_orisub_and_sub_odic)
+            return
+
+        # -----strengthen matching method-----
+        elif self.radiobutton_select.get() == 2:
+            # matcher = difflib.Differ()
+            # aa = matcher.compare(videofile_list_ll[0], videofile_list_ll[1])
+            # aa.
+            # print(.join(aa))
+            matcher = difflib.SequenceMatcher(None, videofile_list_ll[0], videofile_list_ll[1])
+            print(matcher.get_opcodes())
+
+            # print(matcher.get_matching_blocks())
+
+
+        # -----Generate video keyword compile-----
+        video_key_re_h = re.match(r'(.+)\*(.+)', u_in_video_keywork)
+        if video_key_re_h:
+            key_prv = video_key_re_h.group(1)
+            key_aft = video_key_re_h.group(2)
+            if not video_key_re_h.group(1):
+                key_prv = '.*'
+            if not video_key_re_h.group(2):
+                key_aft = '.*'
+            videonum_re_h = re.compile(r'%s(.*)%s'
+                                       % (re.escape(key_prv), re.escape(key_aft)))
+        # -----Generate video keyword compile-----
+        sub_key_re_h = re.match(r'(.+)\*(.+)', u_in_sub_keyword)
+        if sub_key_re_h:
+            key_prv = sub_key_re_h.group(1)
+            key_aft = sub_key_re_h.group(2)
+            if not sub_key_re_h.group(1):
+                key_prv = '.*'
+            if not sub_key_re_h.group(2):
+                key_aft = '.*'
+            subnum_re_h = re.compile(r'%s(.*)%s'
+                                     % (re.escape(key_prv), re.escape(key_aft)))
+
+
+        # -----if uses manually mapping method, remove video filename extension and save list to ordered dict-----
+        if self.manually_radio == 3:
+            for i in videofile_list_ll:
+                c = os.path.splitext(i)
+                videofile_list_odic[i] = c[0]
+
         if subfile_list_odic and videofile_list_odic:
             print("start mapping video and sub")
-             # -----Free memory-----
-            del temp_file_list_ll
-            del temp_list_lv
-
             # -----save mapping table to dic-----
             for s_name_j in subfile_list_odic:
                 mapping_state_lv = 0
@@ -360,12 +412,12 @@ class rename_frame():
                 for v_fullname_i, v_name_nonext_j in videofile_list_odic.items():
                     # print(v_name_nonext_j)
                     # v_key_lv = list(map(int, (videonum_re_h.findall(v_name_nonext_j))))
-                    v_key_lv = subnum_re_h.findall(v_name_nonext_j)
+                    v_key_lv = videonum_re_h.findall(v_name_nonext_j)
                     if v_key_lv:
                         v_key_lv = list(map(int, v_key_lv))
                     else:
                         break
-                    print(v_key_lv)
+                    # print(v_key_lv)
                     if v_key_lv == s_key_lv and v_key_lv:
                         mapping_state_lv = 1
                         # mapping_orisub_and_video_odic.update({v_name_i: s_name_j})
@@ -379,18 +431,10 @@ class rename_frame():
                     # for t, c in videofile_list_odic.items():
                     #     print(t, c)
 
-        # return mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
+        # update mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
         self.mapping_orisub_and_video_odic.update(mapping_orisub_and_video_odic)
         self.mapping_orisub_and_sub_odic.update(mapping_orisub_and_sub_odic)
         # self.show_list_on_view_text(mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic)
-
-        # self.view_txt.config(state="normal")
-        # for j, p in mapping_orisub_and_sub_odic.items():
-        #     print(j, p)
-        #     self.view_txt.insert(INSERT, j + "\n")
-        #     self.view_txt.insert(INSERT, j + "\n", 'info')
-
-        # self.view_txt.config(state="disable")
 
     def show_list_on_view_text(self, mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic):
         # print (mapping_orisub_and_sub_odic[])
@@ -404,18 +448,12 @@ class rename_frame():
             print(i, mapping_orisub_and_sub_odic[i])
         self.view_txt.config(state="disable")
 
-
     def start_rename(self):
-        [status, path_lv, type_ls] = self.arrange_user_input_format()
-        if not status == error_Code.NORMAL.value:
-            typels = set(type_ls)
-            if not os.path.exists(path_lv):
-                print("sub path not exist")
         pass
 
     def close_ren_frame(self, event=None):
         print("current path: "+os.getcwd())
-        os.chdir(self.app_current_path_lv)
+        os.chdir(self.app_current_path)
         print("change to path: " + os.getcwd())
         if self.timer_h:
             self.stop_count_timer()

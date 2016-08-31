@@ -18,6 +18,8 @@ Ver 4.3.5 - Add rename sub file to match video file name
 """
 
 from tkinter import *
+from tkinter.ttk import *
+from tkinter.font import Font
 import tkinter.messagebox
 import re
 import configparser
@@ -78,94 +80,122 @@ class replace_Sub_Gui(Frame):
         self.user_input_path = ""
         self.user_input_type = ""
         self.app_current_path_lv = os.getcwd()
-        self.grid()
-        # -----Define all GUI item-----
-        self.sub_path_label = Label(self)
-        self.sub_path_entry = Entry(self)
-        self.sub_type_label = Label(self)
-        self.sub_type_entry = Entry(self)
-        self.rename_button = Button(self)
-        self.start_button = Button(self)
-        self.help_button = Button(self)
-        self.clip_button = Button(self)
-        self.empty_label = Label(self)
-        self.version_label = Label(self)
-        self.version_state = Label(self)
-        self.hide_log_button = Button(self)
-        # self.log_txt = ScrolledText(self, wrap='none', state="disabled")
-        self.ren_frame_oriview_txt = Text(self, wrap='none', state="disabled")
-        self.vert_scrollbar = Scrollbar(self, orient=VERTICAL)
-        self.hor_scrollbar = Scrollbar(self, orient='horizontal')
-        self.log_txt = Text(self, wrap='none', state="disabled",
-                            yscrollcommand=self.vert_scrollbar.set, xscrollcommand=self.hor_scrollbar.set)
+        # self.checkbutton_select = IntVar()
+        # self.grid()
+        # # -----Define all GUI item-----
+        # self.sub_path_label = Label(self)
+        # self.sub_path_entry = Entry(self)
+        # self.sub_type_label = Label(self)
+        # self.sub_type_entry = Entry(self)
+        # self.rename_button = Button(self)
+        # self.start_button = Button(self)
+        # self.help_button = Button(self)
+        # self.clip_button = Button(self)
+        # self.empty_label = Label(self)
+        # self.version_label = Label(self)
+        # self.version_state = Label(self)
+        # # self.hide_log_button = Button(self)
+        # self.shlog_chbutton = Checkbutton(self)
+        # # self.log_txt = ScrolledText(self, wrap='none', state="disabled")
+        # # self.ren_frame_oriview_txt = Text(self, wrap='none', state="disabled")
+        # self.vert_scrollbar = Scrollbar(self, orient=VERTICAL)
+        # self.hor_scrollbar = Scrollbar(self, orient='horizontal')
+        # self.log_txt = Text(self, wrap='none', state="disabled",
+        #                     yscrollcommand=self.vert_scrollbar.set, xscrollcommand=self.hor_scrollbar.set)
 
         # -----Set Text log fone color-----
-        self.log_txt.tag_config("error", foreground="#CC0000")
-        self.log_txt.tag_config("info", foreground="#008800")
-        self.log_txt.tag_config("info2", foreground="#404040")
+
 
         root.bind('<Key-Return>', self.press_key_enter)
 
         self.create_widgets()
 
     def create_widgets(self):
-        # -----First input entry-----
-        self.sub_path_label["text"] = "SUB Path:"
-        self.sub_path_label.grid(row=0, column=0)
-        self.sub_path_entry["width"] = 60
-        self.sub_path_entry.insert(0, self.subpath_ini)
-        self.sub_path_entry.grid(row=0, column=1, columnspan=6)
-        # -----File type entry
-        self.sub_type_label["text"] = "SUB type:"
-        self.sub_type_label.grid(row=1, column=0)
-        self.sub_type_entry["width"] = 60
-        self.sub_type_entry.insert(0, self.subfiletype_list_ini)
-        self.sub_type_entry.grid(row=1, column=1, columnspan=6)
-        # -----Button Rename-----
-        self.rename_button["text"] = "Sub Rename"
-        # self.rename_button["width"] = 5
-        # self.rename_button["command"] = self.show_rename_frame
-        self.rename_button["command"] = self.show_rename_frame
-        self.rename_button.grid(row=2, column=0, columnspan=2)
-        # -----Button Start-----
-        self.start_button["text"] = "Start"
-        # self.start_button["width"] = 5
-        self.start_button["command"] = self.replace_all_sub_in_path
-        self.start_button.grid(row=2, column=2, columnspan=2)
-        # -----Button Help-----
-        self.help_button["text"] = "Help"
-        self.help_button["command"] = self.print_about
-        self.help_button.grid(row=2, column=3, columnspan=2)
-        # -----Button Clipboard-----
-        self.clip_button["text"] = "Convert Clipboard"
-        self.clip_button["command"] = self.convert_clipboard
-        self.clip_button.grid(row=2, column=5, columnspan=2)
-        # -----Label empty-----
-        self.empty_label["text"] = ""
-        self.empty_label["width"] = 15
-        self.empty_label.grid(row=3, column=0, columnspan=2, sticky='w')
-        # self.version_state.grid(row=3, column=0, sticky='w')
-        # -----Label version-----
-        self.version_label["text"] = version
-        self.version_label["state"] = 'disable'
-        self.version_label.grid(row=4, column=6, columnspan=2)
-        # -----Label state-----
-        self.version_state["text"] = progress_idle_txt
-        self.version_state["width"] = 10
-        self.version_state.grid(row=4, column=0, columnspan=1, sticky='SNWE')
-        # -----Text log-----
-        self.log_txt["width"] = 60
-        self.log_txt["font"] = ("Purisa", 10)
-        self.log_txt.grid(row=5, column=0, columnspan=8, sticky='WE')
+        self.top = self.winfo_toplevel()
+
+        self.style = Style()
+
+        self.style.configure('Tuser_input_frame.TLabelframe', font=('iLiHei',9))
+        self.style.configure('Tuser_input_frame.TLabelframe.Label', font=('iLiHei',9))
+        self.user_input_frame = LabelFrame(self.top, text='輸入', style='Tuser_input_frame.TLabelframe')
+        self.user_input_frame.place(relx=0.01, rely=0.013, relwidth=0.981, relheight=0.262)
+
+        self.shlog_chbuttonVar = IntVar(value=0)
+        self.style.configure('Tshlog_chbutton.TCheckbutton', font=('iLiHei',9))
+        self.shlog_chbutton = Checkbutton(self.top, text='Show log', variable=self.shlog_chbuttonVar, style='Tshlog_chbutton.TCheckbutton')
+        self.shlog_chbutton.place(relx=0.02, rely=0.235, relwidth=0.103, relheight=0.028)
+
+        self.style.configure('Tlog_frame.TLabelframe', font=('iLiHei',9))
+        self.style.configure('Tlog_frame.TLabelframe.Label', font=('iLiHei',9))
+        self.log_frame = LabelFrame(self.top, text='log', style='Tlog_frame.TLabelframe')
+        self.log_frame.place(relx=0.01, rely=0.287, relwidth=0.981, relheight=0.705)
+
+        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei',10))
+        self.sub_type_label = Label(self.user_input_frame, text='SUB type:', style='Tsub_type_label.TLabel')
+        self.sub_type_label.place(relx=0.01, rely=0.398, relwidth=0.074, relheight=0.205)
+
+        self.sub_path_entryVar = StringVar(value=self.subpath_ini)
+        self.sub_path_entry = Entry(self.user_input_frame, textvariable=self.sub_path_entryVar, font=('iLiHei',10))
+        self.sub_path_entry.place(relx=0.094, rely=0.099, relwidth=0.698, relheight=0.155)
+
+        self.style.configure('Trename_button.TButton', font=('iLiHei',9))
+        self.rename_button = Button(self.user_input_frame, text='Sub Rename', command=self.show_rename_frame, style='Trename_button.TButton')
+        self.rename_button.place(relx=0.822, rely=0.099, relwidth=0.137, relheight=0.205)
+
+        self.style.configure('Tstart_button.TButton', font=('iLiHei',9))
+        self.start_button = Button(self.user_input_frame, text='Start', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
+        self.start_button.place(relx=0.302, rely=0.745, relwidth=0.105, relheight=0.205)
+
+        self.style.configure('Thelp_button.TButton', font=('iLiHei',9))
+        self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
+        self.help_button.place(relx=0.531, rely=0.745, relwidth=0.105, relheight=0.205)
+
+        self.style.configure('Tclip_button.TButton', font=('iLiHei',9))
+        self.clip_button = Button(self.user_input_frame, text='Convert Clipboard', command=self.convert_clipboard, style='Tclip_button.TButton')
+        self.clip_button.place(relx=0.822, rely=0.447, relwidth=0.137, relheight=0.205)
+
+        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei',10))
+        self.sub_path_label = Label(self.user_input_frame, text='SUB Path:', style='Tsub_path_label.TLabel')
+        self.sub_path_label.place(relx=0.01, rely=0.099, relwidth=0.072, relheight=0.149)
+
+        self.style.configure('Tversion_state.TLabel', anchor='e', font=('iLiHei',9))
+        self.version_state = Label(self.user_input_frame, text='idle', style='Tversion_state.TLabel')
+        self.version_state.place(relx=0.863, rely=0.845, relwidth=0.116, relheight=0.106)
+
+        self.sub_type_entryVar = StringVar(value=self.subfiletype_list_ini)
+        self.sub_type_entry = Entry(self.user_input_frame, textvariable=self.sub_type_entryVar, font=('iLiHei',10))
+        self.sub_type_entry.place(relx=0.094, rely=0.398, relwidth=0.698, relheight=0.155)
+
+        self.VScroll1 = Scrollbar(self.log_frame, orient='vertical')
+        self.VScroll1.place(relx=0.967, rely=0.018, relwidth=0.022, relheight=0.926)
+
+        self.HScroll1 = Scrollbar(self.log_frame, orient='horizontal')
+        self.HScroll1.place(relx=0.01, rely=0.942, relwidth=0.958, relheight=0.039)
+
+        self.log_txtFont = Font(font=('iLiHei',10))
+        self.log_txt = Text(self.log_frame, xscrollcommand=self.HScroll1.set, yscrollcommand=self.VScroll1.set, font=self.log_txtFont)
+        self.log_txt.place(relx=0.01, rely=0.018, relwidth=0.958, relheight=0.926)
+        self.log_txt.insert('1.0','')
+        self.HScroll1['command'] = self.log_txt.xview
+        self.VScroll1['command'] = self.log_txt.yview
+
+
         # -----Scrollbar for log text wiege-----
-        self.hor_scrollbar.config(command=self.log_txt.xview)
-        self.vert_scrollbar.config(command=self.log_txt.yview)
-        self.vert_scrollbar.grid(row=5, column=7, columnspan=8, sticky='NS')
-        self.hor_scrollbar.grid(row=6, column=0, columnspan=8, sticky='EW')
+        # self.hor_scrollbar.config(command=self.log_txt.xview)
+        # self.vert_scrollbar.config(command=self.log_txt.yview)
+        # self.vert_scrollbar.grid(row=5, column=7, columnspan=8, sticky='NS')
+        # self.hor_scrollbar.grid(row=6, column=0, columnspan=8, sticky='EW')
         # -----Button Hide log-----
-        self.hide_log_button["text"] = "Hide Log"
-        self.hide_log_button["command"] = self.hide_log_widge
-        self.hide_log_button.grid(row=7, column=0)
+        # self.hide_log_button["text"] = "Hide Log"
+        # self.hide_log_button["command"] = self.hide_log_widge
+        # self.hide_log_button.grid(row=7, column=0)
+        # -----Checkbutton show/hide log-----
+        # self.shlog_chbutton.config(variable=self.checkbutton_select, text='Show log', command=self.hide_log_widge)
+        # self.shlog_chbutton.grid(row=4, column=0, columnspan=1, sticky='SNWE')
+
+        self.log_txt.tag_config("error", foreground="#CC0000")
+        self.log_txt.tag_config("info", foreground="#008800")
+        self.log_txt.tag_config("info2", foreground="#404040")
 
         self.update_idletasks()
 
@@ -173,14 +203,23 @@ class replace_Sub_Gui(Frame):
         ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
 
     def hide_log_widge(self):
-        self.log_txt.grid_remove()
-        self.vert_scrollbar.grid_remove()
-        self.hor_scrollbar.grid_remove()
-        self.hide_log_button.grid_remove()
-        self.version_state["text"] = progress_idle_txt
-        self.update_idletasks()
+        # if self.shlog_chbuttonVar.get():
+        #     self.log_txt.grid_remove()
+        #     self.vert_scrollbar.grid_remove()
+        #     self.hor_scrollbar.grid_remove()
+        #     # self.hide_log_button.grid_remove()
+        #     self.version_state["text"] = progress_idle_txt
+        #     self.update_idletasks()
+        # else:
+        #     # -----Show log widge-----
+        #     if not self.log_txt.grid_info():
+        #         self.log_txt.grid()
+        #         self.vert_scrollbar.grid()
+        #         self.hor_scrollbar.grid()
+        #         # self.hide_log_button.grid()
+        pass
 
-    def press_key_enter(self, event):
+    def press_key_enter(self, event=None):
         self.replace_all_sub_in_path()
 
     def convert_clipboard(self):
@@ -239,7 +278,7 @@ class replace_Sub_Gui(Frame):
         except:
             self.setlog("Error! Read setting ini file fail! "
                         "please create UTF-16 format " + filename + " in tool path", 'error')
-            return error_Type.FILE_ERROR
+            return error_Type.FILE_ERROR.value
 
     def write_config(self, filename, sections, key, value):
         try:
@@ -255,7 +294,7 @@ class replace_Sub_Gui(Frame):
         except Exception as ex:
             self.setlog("Error! Write setting to ini file fail, "
                         "please create UTF-16 format "+filename+" in tool path", 'error')
-            return error_Type.FILE_ERROR
+            return error_Type.FILE_ERROR.value
 
     def store_origin_file_to_backup_folder(self, file, back_folder):
         shutil.copy2(file, back_folder)
@@ -324,15 +363,8 @@ class replace_Sub_Gui(Frame):
         return status_lv
 
     def replace_all_sub_in_path(self):
-        status = False
-        w_file_stat_lv = error_Type.NORMAL
+        w_file_stat_lv = error_Type.NORMAL.value
 
-        # -----Show log widge-----
-        if not self.log_txt.grid_info():
-            self.log_txt.grid()
-            self.vert_scrollbar.grid()
-            self.hor_scrollbar.grid()
-            self.hide_log_button.grid()
         # -----Clear text widge for log-----
         self.log_txt.config(state="normal")
         self.log_txt.delete('1.0', END)
@@ -352,7 +384,7 @@ class replace_Sub_Gui(Frame):
         # -----get config ini file setting-----
         self.subpath_ini = self.read_config(sub_setting_name, 'Global', 'subpath')
         self.subfiletype_list_ini = self.read_config(sub_setting_name, 'Global', 'subtype')
-        if self.subpath_ini == error_Type.FILE_ERROR or self.subfiletype_list_ini == error_Type.FILE_ERROR:
+        if self.subpath_ini == error_Type.FILE_ERROR.value or self.subfiletype_list_ini == error_Type.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
                                          "Error! Read setting ini file fail! "
                                          "please create UTF-16 format " + sub_setting_name + " in tool path")
@@ -371,7 +403,7 @@ class replace_Sub_Gui(Frame):
             self.setlog("Write new type setting to: " + sub_setting_name, "info")
             # print("type not match, write new type list to ini")
             w_file_stat_lv = self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
-        if w_file_stat_lv == error_Type.FILE_ERROR:
+        if w_file_stat_lv == error_Type.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
                                          "Error! Write setting ini file fail! "
                                          "please create UTF-16 format " + sub_setting_name + " in AJSub path")
@@ -386,7 +418,7 @@ class replace_Sub_Gui(Frame):
 
         # -----Dim button for string converting-----
         self.version_state["text"] = progress_txt
-        self.version_state["fg"] = "blue"
+        # self.version_state["fg"] = "blue"
         self.start_button["state"] = 'disable'
         # self.help_button["state"] = 'disable'
         self.update_idletasks()
@@ -402,7 +434,7 @@ class replace_Sub_Gui(Frame):
 
         # -----Set button and progressing state to normal-----
         self.version_state["text"] = progress_done_txt
-        self.version_state["fg"] = "blue"
+        # self.version_state["fg"] = "blue"
         self.start_button["state"] = 'normal'
         # self.help_button["state"] = 'normal'
         self.update_idletasks()
@@ -457,6 +489,7 @@ if __name__ == '__main__':
     # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
     # -----Start GUI class-----
+    root.geometry('784x614')
     app = replace_Sub_Gui(master=root, subfilepath_ini=subpath,
                           subfiletype_ini=subfiletype_list, help_text=help_text)
     # -----Start main loop-----
