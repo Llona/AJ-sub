@@ -115,70 +115,74 @@ class replace_Sub_Gui(Frame):
 
         self.style = Style()
 
-        self.style.configure('Tuser_input_frame.TLabelframe', font=('iLiHei',9))
-        self.style.configure('Tuser_input_frame.TLabelframe.Label', font=('iLiHei',9))
+        self.style.configure('Tlog_frame.TLabelframe', font=('iLiHei', 10))
+        self.style.configure('Tlog_frame.TLabelframe.Label', font=('iLiHei', 10))
+        self.log_frame = LabelFrame(self.top, text='LOG', style='Tlog_frame.TLabelframe')
+        self.log_frame.place(relx=0.01, rely=0.283, relwidth=0.973, relheight=0.708)
+
+        self.style.configure('Tuser_input_frame.TLabelframe', font=('iLiHei', 10))
+        self.style.configure('Tuser_input_frame.TLabelframe.Label', font=('iLiHei', 10))
         self.user_input_frame = LabelFrame(self.top, text='輸入', style='Tuser_input_frame.TLabelframe')
-        self.user_input_frame.place(relx=0.01, rely=0.013, relwidth=0.981, relheight=0.262)
-
-        self.shlog_chbuttonVar = IntVar(value=0)
-        self.style.configure('Tshlog_chbutton.TCheckbutton', font=('iLiHei',9))
-        self.shlog_chbutton = Checkbutton(self.top, text='Show log', variable=self.shlog_chbuttonVar, style='Tshlog_chbutton.TCheckbutton')
-        self.shlog_chbutton.place(relx=0.02, rely=0.235, relwidth=0.103, relheight=0.028)
-
-        self.style.configure('Tlog_frame.TLabelframe', font=('iLiHei',9))
-        self.style.configure('Tlog_frame.TLabelframe.Label', font=('iLiHei',9))
-        self.log_frame = LabelFrame(self.top, text='log', style='Tlog_frame.TLabelframe')
-        self.log_frame.place(relx=0.01, rely=0.287, relwidth=0.981, relheight=0.705)
-
-        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei',10))
-        self.sub_type_label = Label(self.user_input_frame, text='SUB type:', style='Tsub_type_label.TLabel')
-        self.sub_type_label.place(relx=0.01, rely=0.398, relwidth=0.074, relheight=0.205)
-
-        self.sub_path_entryVar = StringVar(value=self.subpath_ini)
-        self.sub_path_entry = Entry(self.user_input_frame, textvariable=self.sub_path_entryVar, font=('iLiHei',10))
-        self.sub_path_entry.place(relx=0.094, rely=0.099, relwidth=0.698, relheight=0.155)
-
-        self.style.configure('Trename_button.TButton', font=('iLiHei',9))
-        self.rename_button = Button(self.user_input_frame, text='Sub Rename', command=self.show_rename_frame, style='Trename_button.TButton')
-        self.rename_button.place(relx=0.822, rely=0.099, relwidth=0.137, relheight=0.205)
-
-        self.style.configure('Tstart_button.TButton', font=('iLiHei',9))
-        self.start_button = Button(self.user_input_frame, text='Start', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
-        self.start_button.place(relx=0.302, rely=0.745, relwidth=0.105, relheight=0.205)
-
-        self.style.configure('Thelp_button.TButton', font=('iLiHei',9))
-        self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
-        self.help_button.place(relx=0.531, rely=0.745, relwidth=0.105, relheight=0.205)
-
-        self.style.configure('Tclip_button.TButton', font=('iLiHei',9))
-        self.clip_button = Button(self.user_input_frame, text='Convert Clipboard', command=self.convert_clipboard, style='Tclip_button.TButton')
-        self.clip_button.place(relx=0.822, rely=0.447, relwidth=0.137, relheight=0.205)
-
-        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei',10))
-        self.sub_path_label = Label(self.user_input_frame, text='SUB Path:', style='Tsub_path_label.TLabel')
-        self.sub_path_label.place(relx=0.01, rely=0.099, relwidth=0.072, relheight=0.149)
-
-        self.style.configure('Tversion_state.TLabel', anchor='e', font=('iLiHei',9))
-        self.version_state = Label(self.user_input_frame, text='idle', style='Tversion_state.TLabel')
-        self.version_state.place(relx=0.863, rely=0.845, relwidth=0.116, relheight=0.106)
-
-        self.sub_type_entryVar = StringVar(value=self.subfiletype_list_ini)
-        self.sub_type_entry = Entry(self.user_input_frame, textvariable=self.sub_type_entryVar, font=('iLiHei',10))
-        self.sub_type_entry.place(relx=0.094, rely=0.398, relwidth=0.698, relheight=0.155)
+        self.user_input_frame.place(relx=0.01, rely=0.011, relwidth=0.973, relheight=0.262)
 
         self.VScroll1 = Scrollbar(self.log_frame, orient='vertical')
-        self.VScroll1.place(relx=0.967, rely=0.018, relwidth=0.022, relheight=0.926)
+        self.VScroll1.place(relx=0.967, rely=0.046, relwidth=0.022, relheight=0.893)
 
         self.HScroll1 = Scrollbar(self.log_frame, orient='horizontal')
-        self.HScroll1.place(relx=0.01, rely=0.942, relwidth=0.958, relheight=0.039)
+        self.HScroll1.place(relx=0.01, rely=0.937, relwidth=0.958, relheight=0.033)
 
-        self.log_txtFont = Font(font=('iLiHei',10))
+        self.log_txtFont = Font(font=('iLiHei', 10))
         self.log_txt = Text(self.log_frame, xscrollcommand=self.HScroll1.set, yscrollcommand=self.VScroll1.set, font=self.log_txtFont)
-        self.log_txt.place(relx=0.01, rely=0.018, relwidth=0.958, relheight=0.926)
-        self.log_txt.insert('1.0','')
+        self.log_txt.place(relx=0.01, rely=0.010, relwidth=0.958, relheight=0.893)
+        # self.log_txt.insert('1.0', '')
         self.HScroll1['command'] = self.log_txt.xview
         self.VScroll1['command'] = self.log_txt.yview
 
+        self.style.configure('Tclip_button.TButton', font=('iLiHei', 9))
+        self.clip_button = Button(self.user_input_frame, text='Convert Clipboard', command=self.convert_clipboard, style='Tclip_button.TButton')
+        self.clip_button.place(relx=0.832, rely=0.497, relwidth=0.137, relheight=0.220)
+
+        self.style.configure('Thelp_button.TButton', font=('iLiHei', 9))
+        self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
+        self.help_button.place(relx=0.562, rely=0.788, relwidth=0.105, relheight=0.200)
+
+        self.style.configure('Tstart_button.TButton', font=('iLiHei', 9))
+        self.start_button = Button(self.user_input_frame, text='Start', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
+        self.start_button.place(relx=0.281, rely=0.788, relwidth=0.105, relheight=0.200)
+
+        self.style.configure('Trename_button.TButton', font=('iLiHei', 9))
+        self.rename_button = Button(self.user_input_frame, text='Sub Rename', command=self.show_rename_frame, style='Trename_button.TButton')
+        self.rename_button.place(relx=0.832, rely=0.166, relwidth=0.137, relheight=0.200)
+
+        self.sub_path_entryVar = StringVar(value=self.subpath_ini)
+        self.sub_path_entry = Entry(self.user_input_frame, textvariable=self.sub_path_entryVar, font=('iLiHei', 10))
+        self.sub_path_entry.place(relx=0.01, rely=0.180, relwidth=0.80, relheight=0.180)
+
+        self.sub_type_entryVar = StringVar(value=self.subfiletype_list_ini)
+        self.sub_type_entry = Entry(self.user_input_frame, textvariable=self.sub_type_entryVar, font=('iLiHei', 10))
+        self.sub_type_entry.place(relx=0.01, rely=0.520, relwidth=0.80, relheight=0.190)
+
+        self.style.configure('Tversion_label.TLabel', anchor='e', font=('iLiHei', 9))
+        self.version_label = Label(self.user_input_frame, text=version, state='disable', style='Tversion_label.TLabel')
+        self.version_label.place(relx=0.843, rely=0.87, relwidth=0.147, relheight=0.13)
+
+        self.style.configure('Tversion_state.TLabel', anchor='w', font=('iLiHei', 9))
+        self.version_state = Label(self.user_input_frame, text=progress_idle_txt, style='Tversion_state.TLabel')
+        self.version_state.place(relx=0.01, rely=0.87, relwidth=0.116, relheight=0.13)
+
+        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.sub_type_label = Label(self.user_input_frame, text='SUB Type', style='Tsub_type_label.TLabel')
+        self.sub_type_label.place(relx=0.01, rely=0.380, relwidth=0.095, relheight=0.13)
+
+        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.sub_path_label = Label(self.user_input_frame, text='SUB Path', style='Tsub_path_label.TLabel')
+        self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.078, relheight=0.166)
+
+
+        # self.convert_clipboard
+        # self.print_about
+        # self.replace_all_sub_in_path
+        # self.show_rename_frame
 
         # -----Scrollbar for log text wiege-----
         # self.hor_scrollbar.config(command=self.log_txt.xview)
