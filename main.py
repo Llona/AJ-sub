@@ -126,14 +126,14 @@ class replace_Sub_Gui(Frame):
         self.user_input_frame.place(relx=0.01, rely=0.011, relwidth=0.973, relheight=0.262)
 
         self.VScroll1 = Scrollbar(self.log_frame, orient='vertical')
-        self.VScroll1.place(relx=0.967, rely=0.046, relwidth=0.022, relheight=0.893)
+        self.VScroll1.place(relx=0.967, rely=0.010, relwidth=0.022, relheight=0.936)
 
         self.HScroll1 = Scrollbar(self.log_frame, orient='horizontal')
-        self.HScroll1.place(relx=0.01, rely=0.937, relwidth=0.958, relheight=0.033)
+        self.HScroll1.place(relx=0.01, rely=0.940, relwidth=0.958, relheight=0.055)
 
         self.log_txtFont = Font(font=('iLiHei', 10))
-        self.log_txt = Text(self.log_frame, xscrollcommand=self.HScroll1.set, yscrollcommand=self.VScroll1.set, font=self.log_txtFont)
-        self.log_txt.place(relx=0.01, rely=0.010, relwidth=0.958, relheight=0.893)
+        self.log_txt = Text(self.log_frame, wrap='none', xscrollcommand=self.HScroll1.set, yscrollcommand=self.VScroll1.set, font=self.log_txtFont)
+        self.log_txt.place(relx=0.01, rely=0.010, relwidth=0.958, relheight=0.936)
         # self.log_txt.insert('1.0', '')
         self.HScroll1['command'] = self.log_txt.xview
         self.VScroll1['command'] = self.log_txt.yview
@@ -206,21 +206,25 @@ class replace_Sub_Gui(Frame):
     def show_rename_frame(self):
         ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
 
-    def hide_log_widge(self):
-        # if self.shlog_chbuttonVar.get():
-        #     self.log_txt.grid_remove()
-        #     self.vert_scrollbar.grid_remove()
-        #     self.hor_scrollbar.grid_remove()
-        #     # self.hide_log_button.grid_remove()
-        #     self.version_state["text"] = progress_idle_txt
-        #     self.update_idletasks()
-        # else:
-        #     # -----Show log widge-----
-        #     if not self.log_txt.grid_info():
-        #         self.log_txt.grid()
-        #         self.vert_scrollbar.grid()
-        #         self.hor_scrollbar.grid()
-        #         # self.hide_log_button.grid()
+    # def hide_log_widge(self):
+    #     print(self.shlog_chbuttonVar.get())
+    #     if not self.shlog_chbuttonVar.get():
+    #         # self.log_frame.place_forget()
+    #         # self.log_frame.grid_remove()
+    #         # self.log_txt.grid_remove()
+    #         # self.vert_scrollbar.grid_remove()
+    #         # self.hor_scrollbar.grid_remove()
+    #         # # self.hide_log_button.grid_remove()
+    #         # self.version_state["text"] = progress_idle_txt
+    #         self.update_idletasks()
+    #     else:
+    #         # -----Show log widge-----
+    #         if not self.log_txt.grid_info():
+    #             self.log_frame.place(relx=0.01, rely=0.287, relwidth=0.981, relheight=0.705)
+    #             # self.log_txt.grid()
+    #             # self.vert_scrollbar.grid()
+    #             # self.hor_scrollbar.grid()
+    #             # self.hide_log_button.grid()
         pass
 
     def press_key_enter(self, event=None):
@@ -259,7 +263,7 @@ class replace_Sub_Gui(Frame):
         if (level != 'error') and (level != 'info') and (level != 'info2'):
             level = ""
 
-        self.log_txt.insert(INSERT, string + "\n", level)
+        self.log_txt.insert(INSERT, "%s\n" % string, level)
         # -----scroll to end of text widge-----
         self.log_txt.see(END)
         self.update_idletasks()
@@ -267,7 +271,7 @@ class replace_Sub_Gui(Frame):
         self.log_txt.config(state="disabled")
 
     def setlog_large(self, string, level=None):
-        self.log_txt.insert(INSERT, string + "\n", level)
+        self.log_txt.insert(INSERT, "%s\n" % string, level)
         # -----scroll to end of text widge-----
         self.log_txt.see(END)
         self.update_idletasks()
