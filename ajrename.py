@@ -7,9 +7,7 @@ import os
 import re
 import configparser
 from enum import Enum
-# from time import sleep
-# import time
-# from datetime import datetime
+from time import sleep
 from threading import Timer
 from collections import OrderedDict
 
@@ -24,12 +22,17 @@ class error_Code(Enum):
     USER_VIDEO_INPUT_KEYWORD_ERROR = 6
     USER_SUB_INPUT_KEYWORD_ERROR = 7
     USER_RENAME_INPUT_ERROR = 8
+    MAPPING_LIST_EMPTY = 9
+    UNKNOW_ERROR = 10
 
 
 class rename_frame:
     def __init__(self, parent, main_sub_path, main_sub_type, setting_name):
+        self.status = error_Code.NORMAL.value
+        self.select_turn_on_mapping_fl = False
         self.main_sub_path = main_sub_path
         self.main_sub_type = main_sub_type
+        self.setting_ini_file_name = setting_name
         self.setting_ini_dic = {}
         self.rename_ori_and_rename_odic = OrderedDict()
         self.mapping_orisub_and_video_odic = OrderedDict()
@@ -42,6 +45,8 @@ class rename_frame:
         # -----Create TopLevel frame-----
         self.top = Toplevel(parent)
         self.top.geometry('1264x754')
+        self.top.title("AJRename")
+        self.top.iconbitmap('icons\\main.ico')
         # self.top_window = Toplevel(parent)
         # self.top_window.overrideredirect(1)
         self.top['takefocus'] = True
@@ -49,27 +54,29 @@ class rename_frame:
         self.top.focus_force()
 
         try:
-            # -----Get setting from Settings.ini-----
+            # -----Get all setting from Settings.ini-----
             file_ini_h = open(setting_name, encoding='utf16')
             config_file_h = configparser.ConfigParser()
             config_file_h.read_file(file_ini_h)
             file_ini_h.close()
-            self.setting_ini_dic['videopath_ini'] = config_file_h.get('Rename', 'videopath')
-            self.setting_ini_dic['videotype_ini'] = config_file_h.get('Rename', 'videotype')
             self.setting_ini_dic['input_rename_ini'] = config_file_h.get('Rename', 'input_rename')
             self.setting_ini_dic['digit_number_ini'] = config_file_h.get('Rename', 'digit_number')
             self.setting_ini_dic['start_number_ini'] = config_file_h.get('Rename', 'start_number')
 
+            self.setting_ini_dic['videopath_ini'] = config_file_h.get('Mapping', 'mappingpath')
+            self.setting_ini_dic['videotype_ini'] = config_file_h.get('Mapping', 'mappingtype')
             self.setting_ini_dic['videokeyword_ini'] = config_file_h.get('Mapping', 'videokeyword')
             self.setting_ini_dic['subkeyword_ini'] = config_file_h.get('Mapping', 'subkeyword')
             self.setting_ini_dic['use_same_path_ini'] = config_file_h.get('Mapping', 'use_same_path')
             config_file_h.clear()
         except:
+            self.status = error_Code.FILE_ERROR.value
+
             tkinter.messagebox.showerror("Error", "Read setting fail " + setting_name+" fail!\n"
                                          "Please check " + setting_name +
-                                         " setting file is correct (unicode format) or re-install AJSub")
+                                         " setting file is correct (UTF-16 format) or re-install AJSub",
+                                         parent=self.top)
             self.close_ren_frame()
-
 
         self.show_rename_frame()
 
@@ -89,34 +96,55 @@ class rename_frame:
         self.style.configure('Tview_right_frame.TLabelframe', font=('iLiHei', 9))
         self.style.configure('Tview_right_frame.TLabelframe.Label', font=('iLiHei', 9))
         self.view_right_frame = LabelFrame(self.top, text='配對結果預覽', style='Tview_right_frame.TLabelframe')
-        # self.view_right_frame.place(relx=0.652, rely=0., relwidth=0.349, relheight=0.595)
 
         self.style.configure('Tview_center_frame.TLabelframe', font=('iLiHei', 9))
         self.style.configure('Tview_center_frame.TLabelframe.Label', font=('iLiHei', 9))
-        self.view_center_frame = LabelFrame(self.top, text='結果預覽', style='Tview_center_frame.TLabelframe')
+        self.view_center_frame = LabelFrame(self.top, style='Tview_center_frame.TLabelframe')
         self.view_center_frame.place(relx=0.500, rely=0., relwidth=0.500, relheight=0.595)
-        # self.view_center_frame.place(relx=0.304, rely=0., relwidth=0.349, relheight=0.595)
 
         self.style.configure('Tview_left_frame.TLabelframe', font=('iLiHei', 9))
         self.style.configure('Tview_left_frame.TLabelframe.Label', font=('iLiHei', 9))
         self.view_left_frame = LabelFrame(self.top, text='原始檔名', style='Tview_left_frame.TLabelframe')
         self.view_left_frame.place(relx=0.006, rely=0., relwidth=0.500, relheight=0.595)
-        # self.view_left_frame.place(relx=0.006, rely=0., relwidth=0.298, relheight=0.595)
 
         self.style.configure('Tvideo_path_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.video_path_label = Label(self.rename_frame, text='Video Path', style='Tvideo_path_label.TLabel')
-        self.video_path_label.place(relx=0.042, rely=0.061, relwidth=0.194, relheight=0.084)
+        self.video_path_label = Label(self.mapping_frame, text='Video Path', style='Tvideo_path_label.TLabel')
+        self.video_path_label.place(relx=0.032, rely=0.269, relwidth=0.100, relheight=0.084)
+
+        self.video_path_entryVar = StringVar(value=self.setting_ini_dic['videopath_ini'])
+        self.video_path_entry = Entry(self.mapping_frame, textvariable=self.video_path_entryVar, font=('iLiHei', 10))
+        self.video_path_entry.place(relx=0.032, rely=0.360, relwidth=0.38, relheight=0.084)
+
+        self.style.configure('Tvideo_type_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.video_type_label = Label(self.mapping_frame, text='Video Type', style='Tvideo_type_label.TLabel')
+        self.video_type_label.place(relx=0.032, rely=0.458, relwidth=0.100, relheight=0.084)
+
+        self.video_type_entryVar = StringVar(value=self.setting_ini_dic['videotype_ini'])
+        self.video_type_entry = Entry(self.mapping_frame, textvariable=self.video_type_entryVar, font=('iLiHei', 10))
+        self.video_type_entry.place(relx=0.032, rely=0.550, relwidth=0.38, relheight=0.084)
+
+        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.sub_path_label = Label(self.rename_frame, text='SUB Path', style='Tsub_path_label.TLabel')
+        self.sub_path_label.place(relx=0.042, rely=0.061, relwidth=0.194, relheight=0.084)
+
+        self.sub_path_entryVar = StringVar(value=self.main_sub_path)
+        self.sub_path_entry = Entry(self.rename_frame, textvariable=self.sub_path_entryVar, font=('iLiHei', 10))
+        self.sub_path_entry.place(relx=0.042, rely=0.135, relwidth=0.915, relheight=0.084)
+
+        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.sub_type_label = Label(self.rename_frame, text='SUB Type', style='Tsub_type_label.TLabel')
+        self.sub_type_label.place(relx=0.042, rely=0.255, relwidth=0.279, relheight=0.084)
+
+        self.sub_type_entryVar = StringVar(value=self.main_sub_type)
+        self.sub_type_entry = Entry(self.rename_frame, textvariable=self.sub_type_entryVar, font=('iLiHei', 10))
+        self.sub_type_entry.place(relx=0.042, rely=0.340, relwidth=0.915, relheight=0.084)
 
         self.style.configure('Trename_button.TButton', font=('iLiHei', 10))
         self.rename_button = Button(self.rename_frame, text='Rename', command=self.start_rename, style='Trename_button.TButton')
         self.rename_button.place(relx=0.700, rely=0.835, relwidth=0.260, relheight=0.111)
 
-        self.sub_type_entryVar = StringVar(value=self.main_sub_type)
-        self.sub_type_entry = Entry(self.mapping_frame, textvariable=self.sub_type_entryVar, font=('iLiHei', 10))
-        self.sub_type_entry.place(relx=0.032, rely=0.550, relwidth=0.38, relheight=0.084)
-
         self.style.configure('Tstart_button.TButton', font=('iLiHei', 10))
-        self.start_button = Button(self.mapping_frame, text='Mapping', command=self.start_mappint_rename, style='Tstart_button.TButton')
+        self.start_button = Button(self.mapping_frame, text='Mapping', command=self.start_mapping_rename, style='Tstart_button.TButton')
         self.start_button.place(relx=0.021, rely=0.835, relwidth=0.127, relheight=0.111)
 
         self.turnon_mapping_chbuttonVar = IntVar(value=0)
@@ -128,10 +156,6 @@ class rename_frame:
         self.style.configure('Tuses_samepath_chbutton.TCheckbutton', font=('iLiHei', 10))
         self.uses_samepath_chbutton = Checkbutton(self.mapping_frame, text='使用相同路徑', variable=self.uses_samepath_chbuttonVar, style='Tuses_samepath_chbutton.TCheckbutton')
         self.uses_samepath_chbutton.place(relx=0.021, rely=0.160, relwidth=0.296, relheight=0.084)
-
-        self.sub_path_entryVar = StringVar(value=self.main_sub_path)
-        self.sub_path_entry = Entry(self.mapping_frame, textvariable=self.sub_path_entryVar, font=('iLiHei', 10))
-        self.sub_path_entry.place(relx=0.032, rely=0.360, relwidth=0.38, relheight=0.084)
 
         self.mapping_frameRadioVar = StringVar()
         self.style.configure('Tmanually_radio.TRadiobutton', font=('iLiHei', 10))
@@ -167,18 +191,6 @@ class rename_frame:
         self.sub_keyword_label = Label(self.manually_keyword_frame, text='Sub Keyword', style='Tsub_keyword_label.TLabel')
         self.sub_keyword_label.place(relx=0.047, rely=0.100, relwidth=0.335, relheight=0.172)
 
-        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.sub_type_label = Label(self.mapping_frame, text='SUB Type', style='Tsub_type_label.TLabel')
-        self.sub_type_label.place(relx=0.032, rely=0.458, relwidth=0.090, relheight=0.084)
-
-        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.sub_path_label = Label(self.mapping_frame, text='SUB Path', style='Tsub_path_label.TLabel')
-        self.sub_path_label.place(relx=0.032, rely=0.269, relwidth=0.085, relheight=0.084)
-
-        self.video_type_entryVar = StringVar(value=self.setting_ini_dic['videotype_ini'])
-        self.video_type_entry = Entry(self.rename_frame, textvariable=self.video_type_entryVar, font=('iLiHei', 10))
-        self.video_type_entry.place(relx=0.042, rely=0.340, relwidth=0.915, relheight=0.084)
-
         self.HScroll3 = Scrollbar(self.view_right_frame, orient='horizontal')
         self.HScroll3.place(relx=0.018, rely=0.944, relwidth=0.946, relheight=0.038)
 
@@ -191,10 +203,6 @@ class rename_frame:
         self.HScroll3['command'] = self.view_right_text.xview
         self.VScroll3['command'] = self.view_right_text.yview
 
-        self.video_path_entryVar = StringVar(value=self.setting_ini_dic['videopath_ini'])
-        self.video_path_entry = Entry(self.rename_frame, textvariable=self.video_path_entryVar, font=('iLiHei', 10))
-        self.video_path_entry.place(relx=0.042, rely=0.135, relwidth=0.915, relheight=0.084)
-
         self.HScroll2 = Scrollbar(self.view_center_frame, orient='horizontal')
         self.HScroll2.place(relx=0.018, rely=0.944, relwidth=0.946, relheight=0.038)
 
@@ -206,10 +214,6 @@ class rename_frame:
         self.view_center_text.place(relx=0.018, rely=0.015, relwidth=0.946, relheight=0.930)
         self.HScroll2['command'] = self.view_center_text.xview
         self.VScroll2['command'] = self.view_center_text.yview
-
-        self.style.configure('Tvideo_type_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.video_type_label = Label(self.rename_frame, text='Video Type', style='Tvideo_type_label.TLabel')
-        self.video_type_label.place(relx=0.042, rely=0.255, relwidth=0.279, relheight=0.084)
 
         self.style.configure('Trename_input_label.TLabel', anchor='w', font=('iLiHei', 10))
         self.rename_input_label = Label(self.rename_frame, text='Input:', style='Trename_input_label.TLabel')
@@ -293,14 +297,12 @@ class rename_frame:
         self.view_left_text.bind("<Control-Key-a>", self.view_select_all)
         self.view_left_text.bind("<ButtonRelease-1>", self.view_select_get_and_mark_select)
 
-        self.view_center_text.bind("<Control-Key-A>", self.view_select_all)  # just in case caps lock is on
-        self.view_center_text.bind("<Control-Key-a>", self.view_select_all)  # just in case caps lock is on
+        # self.view_center_text.bind("<Control-Key-A>", self.view_select_all)
+        # self.view_center_text.bind("<Control-Key-a>", self.view_select_all)
         self.view_center_text.bind("<ButtonRelease-1>", self.view_select_get_and_mark_select)
 
         # -----Re-flash all GUI item-----
         self.turn_on_mapping_selected()
-        # -----Show rename preview on text-----
-        self.show_preview_on_textview()
 
     def view_select_get_and_mark_select(self, event=None):
         user_mouse_left_select_list = ''
@@ -322,14 +324,14 @@ class rename_frame:
 
                 self.show_preview_on_textview(user_mouse_left_select_list)
             except:
-                print('not select any thing in left view')
                 self.show_preview_on_textview()
 
     def view_select_all(self, event=None):
         self.view_left_text.tag_add(SEL, "1.0", END)
         self.view_left_text.mark_set(INSERT, "1.0")
         self.view_left_text.see(INSERT)
-        return 'break'
+        self.view_select_get_and_mark_select()
+        return
 
     def start_count_timer(self, sec):
         if self.timer_h and self.timer_h.isAlive():
@@ -349,6 +351,7 @@ class rename_frame:
     def timer_count_expired(self):
         self.stop_count_timer()
         # print("===start preview===")
+
         self.show_preview_on_textview()
         self.timer_running_fl = False
 
@@ -361,21 +364,28 @@ class rename_frame:
             self.start_count_timer(0.7)
 
     def use_thesame_path_selected(self, event=None):
+        self.stop_count_timer()
+
         if self.uses_samepath_chbuttonVar.get() == 1:
-            self.sub_path_entry.config(state='normal')
-            self.sub_path_entryVar.set("")
-            self.sub_path_entry.config(state='disable')
+            self.video_path_entry.config(state='normal')
+            self.video_path_entryVar.set("")
+            self.video_path_entry.config(state='disable')
         else:
-            self.sub_path_entry.config(state='normal')
-            self.sub_path_entryVar.set(self.main_sub_path)
+            self.video_path_entry.config(state='normal')
+            self.video_path_entryVar.set(self.main_sub_path)
+
+        if not self.select_turn_on_mapping_fl:
+            self.show_preview_on_textview()
 
     def turn_on_mapping_selected(self):
         # -----Rename function, disable mapping function input GUI-----
         if not self.turnon_mapping_chbuttonVar.get():
+            self.select_turn_on_mapping_fl = False
             #
             self.view_right_frame.place_forget()
             self.view_center_frame.place(relx=0.500, rely=0., relwidth=0.500, relheight=0.595)
             self.view_left_frame.place(relx=0.006, rely=0., relwidth=0.500, relheight=0.595)
+            self.view_center_frame.config(text='結果預覽')
             #
             self.rename_input_label.config(state='normal')
             self.rename_input_enrty.config(state='normal')
@@ -387,10 +397,10 @@ class rename_frame:
             self.rename_button.config(state='normal')
             #
             self.uses_samepath_chbutton.config(state='disabled')
-            self.sub_path_label.config(state='disabled')
-            self.sub_path_entry.config(state='disabled')
-            self.sub_type_label.config(state='disabled')
-            self.sub_type_entry.config(state='disabled')
+            self.video_path_label.config(state='disabled')
+            self.video_path_entry.config(state='disabled')
+            self.video_type_label.config(state='disabled')
+            self.video_type_entry.config(state='disabled')
             self.default_radio.config(state='disabled')
             self.strengthen_radio.config(state='disabled')
             self.manually_radio.config(state='disabled')
@@ -401,9 +411,12 @@ class rename_frame:
             self.start_button.config(state='disabled')
         # -----Mapping function, disable rename function input GUI-----
         else:
+            self.select_turn_on_mapping_fl = True
+
             self.view_right_frame.place(relx=0.652, rely=0., relwidth=0.349, relheight=0.595)
             self.view_center_frame.place(relx=0.304, rely=0., relwidth=0.349, relheight=0.595)
             self.view_left_frame.place(relx=0.006, rely=0., relwidth=0.298, relheight=0.595)
+            self.view_center_frame.config(text='比對檔案名稱')
             #
             self.rename_input_label.config(state='disabled')
             self.rename_input_enrty.config(state='disabled')
@@ -415,10 +428,10 @@ class rename_frame:
             self.rename_button.config(state='disabled')
             #
             self.uses_samepath_chbutton.config(state='normal')
-            self.sub_path_label.config(state='normal')
-            self.sub_path_entry.config(state='normal')
-            self.sub_type_label.config(state='normal')
-            self.sub_type_entry.config(state='normal')
+            self.video_path_label.config(state='normal')
+            self.video_path_entry.config(state='normal')
+            self.video_type_label.config(state='normal')
+            self.video_type_entry.config(state='normal')
             self.default_radio.config(state='normal')
             self.strengthen_radio.config(state='normal')
             self.manually_radio.config(state='normal')
@@ -426,7 +439,9 @@ class rename_frame:
             self.use_thesame_path_selected()
             self.start_button.config(state='normal')
 
+        self.select_turn_on_mapping_fl = False
         self.stop_count_timer()
+
         self.show_preview_on_textview()
 
     def lucky_store_selected(self):
@@ -435,7 +450,7 @@ class rename_frame:
 
     def radiokbutton_selected(self):
         self.stop_count_timer()
-        self.show_preview_on_textview()
+
         if self.radiobutton_select.get() == 1 or self.radiobutton_select.get() == 2:
             self.sub_keyword_label.config(state='disabled')
             self.sub_keyword_entry.config(state='disabled')
@@ -447,9 +462,17 @@ class rename_frame:
             self.video_keyword_label.config(state='normal')
             self.video_keyword_entry.config(state='normal')
 
+        if not self.select_turn_on_mapping_fl:
+            self.show_preview_on_textview()
+
     def show_preview_on_textview(self, user_mouse_left_select_list=None, event=None):
+
         # turn on mapping function
         if self.turnon_mapping_chbuttonVar.get() == 1:
+            mapping_status = error_Code.NORMAL.value
+            all_sub_list_ll = []
+            video_list_ll = []
+
             # print(user_mouse_left_select_list)
             if not user_mouse_left_select_list:
                 self.view_left_text.config(state="normal")
@@ -470,16 +493,23 @@ class rename_frame:
             [status, sub_path_lv, sub_type_lv, video_path_lv, video_type_lv, sub_keyword_lv, video_keywork_lv] = \
                 self.arrange_user_input_format()
             # print(status)
+
             if status == error_Code.NORMAL.value:
                 for sub_type_i in sub_type_lv:
-                    self.match_sub_and_video_file_update_odic(sub_path_lv, sub_type_i, video_path_lv, video_type_lv,
-                                                              sub_keyword_lv, video_keywork_lv)
-                self.show_list_on_view_text(self.mapping_orisub_and_video_odic, self.mapping_orisub_and_sub_odic)
+
+                    [mapping_status, sub_list_ll, video_list_ll] = self.match_sub_and_video_file_update_odic(
+                        sub_path_lv, sub_type_i, video_path_lv, video_type_lv, sub_keyword_lv, video_keywork_lv)
+
+                    all_sub_list_ll.extend(sub_list_ll)
+                print(mapping_status)
+                if mapping_status == error_Code.NORMAL.value:
+                    self.show_list_on_view_text(1)
+                else:
+                    self.show_list_on_view_text(0, all_sub_list_ll, video_list_ll)
+
+            self.status = status
         # Rename function
         else:
-            # self.view_right_text.config(state="normal")
-            # self.view_right_text.delete('1.0', END)
-            # self.view_right_text.config(state="disable")
             self.view_center_text.config(state="normal")
             self.view_center_text.delete('1.0', END)
             self.view_center_text.config(state="disable")
@@ -491,39 +521,45 @@ class rename_frame:
 
             self.rename_ori_and_rename_odic.clear()
 
-            [status, video_path_lv, video_type_lv, rename_input_lv, user_input_star_number_lv, user_input_digit_number_lv] = self.arrange_user_input_format()
+            [status, sub_path_lv, sub_type_lv, rename_input_lv, user_input_star_number_lv, user_input_digit_number_lv] \
+                = self.arrange_user_input_format()
+
+            # print(status)
             if status == error_Code.NORMAL.value:
-                self.ori_rename_store_odic(status, video_path_lv, video_type_lv, rename_input_lv, user_input_star_number_lv, user_input_digit_number_lv, user_mouse_left_select_list)
+                self.ori_rename_store_odic(status, sub_path_lv, sub_type_lv, rename_input_lv, user_input_star_number_lv,
+                                           user_input_digit_number_lv, user_mouse_left_select_list)
+
+            self.status = status
 
     def arrange_user_input_format(self):
         status_lv = error_Code.NORMAL.value
+        # -----Check user input sub path-----
+        user_input_sub_path_lv = re.sub(r"/$", '', self.sub_path_entry.get())
+        user_input_sub_path_lv = re.sub(r"\\$", "", user_input_sub_path_lv)
+        if not os.path.exists(user_input_sub_path_lv):
+            status_lv = error_Code.USER_SUB_INPUT_PATH_ERROR.value
+            # return error_Code.USER_SUB_INPUT_PATH_ERROR.value
 
-        # -----Check user input video path-----
-        user_input_video_path_lv = re.sub(r"/$", '', self.video_path_entry.get())
-        user_input_video_path_lv = re.sub(r"\\$", "", user_input_video_path_lv)
+        # -----user input sub type-----
+        re_lv = re.sub(r' ', '', self.sub_type_entry.get())
+        user_input_sub_type_ls = re_lv.split(",")
+        # -----remove duplicate item-----
+        user_input_sub_type_ls = set(user_input_sub_type_ls)
 
-        if not os.path.exists(user_input_video_path_lv):
-            status_lv = error_Code.USER_VIDEO_INPUT_PATH_ERROR.value
-            # return error_Code.USER_VIDEO_INPUT_PATH_ERROR.value
-
-        # -----Check user input video path-----
-        re_lv = re.sub(r' ', '', self.video_type_entry.get())
-        user_input_video_type_ls = re_lv.split(",")
-        # remove duplicate item
-        user_input_video_type_ls = set(user_input_video_type_ls)
-
-        if not user_input_video_type_ls:
-            status_lv = error_Code.USER_VIDEO_INPUT_PATH_ERROR.value
+        if not user_input_sub_type_ls:
+            status_lv = error_Code.USER_SUB_INPUT_TYPE_ERROR.value
         # --------------------------------------
 
         # for rename function
         if self.turnon_mapping_chbuttonVar.get() == 0:
 
             user_input_rename_input_lv = self.rename_input_enrty.get()
-            if not user_input_rename_input_lv.find('*'):
+            self.setting_ini_dic['input_rename_ini'] = user_input_rename_input_lv
+            if not user_input_rename_input_lv.find('\*'):
                 status_lv = error_Code.USER_RENAME_INPUT_ERROR.value
 
             user_input_star_number_lv = self.start_number_enrtyVar.get()
+            self.setting_ini_dic['start_number_ini'] = user_input_star_number_lv
             # user_input_star_number_lv = re.math()
             # print(user_input_star_number_lv)
             if not user_input_star_number_lv.isdigit():
@@ -534,45 +570,50 @@ class rename_frame:
             # print(user_input_star_number_lv)
             if not user_input_digit_number_lv.isdigit():
                 user_input_digit_number_lv = 2
+            self.setting_ini_dic['digit_number_ini'] = user_input_digit_number_lv
 
-            return status_lv, user_input_video_path_lv, user_input_video_type_ls, user_input_rename_input_lv, \
+            return status_lv, user_input_sub_path_lv, user_input_sub_type_ls, user_input_rename_input_lv, \
                 int(user_input_star_number_lv), int(user_input_digit_number_lv)
 
         # for mapping function
         else:
-            # ----user input sub path-----
+            # ----user input video path-----
             if self.uses_samepath_chbuttonVar.get() == 1:
-                user_input_sub_path_lv = user_input_video_path_lv
-
+                user_input_video_path_lv = user_input_sub_path_lv
+                self.setting_ini_dic['use_same_path_ini'] = 1
             else:
-                user_input_sub_path_lv = re.sub(r"/$", '', self.sub_path_entry.get())
-                user_input_sub_path_lv = re.sub(r"\\$", "", user_input_sub_path_lv)
-                if not os.path.exists(user_input_sub_path_lv):
-                    status_lv = error_Code.USER_SUB_INPUT_PATH_ERROR.value
-                    # return error_Code.USER_SUB_INPUT_PATH_ERROR.value
+                user_input_video_path_lv = re.sub(r"/$", '', self.video_path_entry.get())
+                user_input_video_path_lv = re.sub(r"\\$", "", user_input_video_path_lv)
+                self.setting_ini_dic['use_same_path_ini'] = 0
 
-            # -----user input sub type-----
-            re_lv = re.sub(r' ', '', self.sub_type_entry.get())
-            user_input_sub_type_ls = re_lv.split(",")
-            # -----remove duplicate item-----
-            user_input_sub_type_ls = set(user_input_sub_type_ls)
+                if not os.path.exists(user_input_video_path_lv):
+                    status_lv = error_Code.USER_VIDEO_INPUT_PATH_ERROR.value
+                    # return error_Code.USER_VIDEO_INPUT_PATH_ERROR.value
+            self.setting_ini_dic['videopath_ini'] = user_input_video_path_lv
 
-            if not user_input_sub_type_ls:
-                status_lv = error_Code.USER_SUB_INPUT_TYPE_ERROR.value
+            # -----Check user input video type-----
+            re_lv = re.sub(r' ', '', self.video_type_entry.get())
+            user_input_video_type_ls = re_lv.split(",")
+            # remove duplicate item
+            user_input_video_type_ls = set(user_input_video_type_ls)
+            self.setting_ini_dic['videotype_ini'] = self.video_type_entry.get()
+            if not user_input_video_type_ls:
+                status_lv = error_Code.USER_VIDEO_INPUT_TYPE_ERROR.value
 
             user_input_sub_keyword_lv = self.sub_keyword_entry.get()
-            if not user_input_sub_keyword_lv.find('*'):
+            self.setting_ini_dic['subkeyword_ini'] = user_input_sub_keyword_lv
+            if not user_input_sub_keyword_lv.find('\*'):
                 status_lv = error_Code.USER_SUB_INPUT_KEYWORD_ERROR.value
 
             user_input_video_keyword_lv = self.video_keyword_entry.get()
-            if not user_input_video_keyword_lv.find('*'):
+            self.setting_ini_dic['videokeyword_ini'] = user_input_video_keyword_lv
+            if not user_input_video_keyword_lv.find('\*'):
                 status_lv = error_Code.USER_VIDEO_INPUT_KEYWORD_ERROR.value
-
 
             return status_lv, user_input_sub_path_lv, user_input_sub_type_ls, user_input_video_path_lv, \
                 user_input_video_type_ls, user_input_sub_keyword_lv, user_input_video_keyword_lv
 
-    def ori_rename_store_odic(self, u_in_status, u_in_video_path, u_in_video_type, u_in_rename,
+    def ori_rename_store_odic(self, u_in_status, u_in_sub_path, u_in_sub_type, u_in_rename,
                               user_input_star_number_lv, user_input_digit_number_lv, user_mouse_select_list=None):
         file_list_ll = []
         file_list_odic = OrderedDict()
@@ -591,8 +632,8 @@ class rename_frame:
         # -----user key-in some thing, need re-get file list
         if not user_mouse_select_list:
             # -----get sub file list-----
-            os.chdir(u_in_video_path)
-            for i in u_in_video_type:
+            os.chdir(u_in_sub_path)
+            for i in u_in_sub_type:
                 temp_list_lv = glob.glob(i)
                 # temp_list_lv = glob.glob('%s\\%s' % (u_in_sub_path, u_in_sub_type))
                 # print(temp_list_lv)
@@ -647,14 +688,14 @@ class rename_frame:
             # =======================================================================================
             if user_mouse_select_list:
                 self.view_center_text.config(state="normal")
-                for i, v in file_list_odic.items():
+                for i, v in self.rename_ori_and_rename_odic.items():
                     self.view_center_text.insert(INSERT, '%s\n' % i)
                     self.view_center_text.insert(INSERT, '%s\n' % v, 'info')
                 self.view_center_text.config(state="disable")
             else:
                 self.view_left_text.config(state="normal")
                 self.view_center_text.config(state="normal")
-                for i, v in file_list_odic.items():
+                for i, v in self.rename_ori_and_rename_odic.items():
                     self.view_left_text.insert(INSERT, '%s\n' % i)
                     self.view_center_text.insert(INSERT, '%s\n' % i)
                     self.view_center_text.insert(INSERT, '%s\n' % v, 'info')
@@ -666,7 +707,6 @@ class rename_frame:
         temp_file_list_ll = []
         videofile_list_ll = []
         sub_file_list_ll = []
-        spli_sub_file_list_ll = []
         videofile_list_odic = OrderedDict()
         subfile_list_odic = OrderedDict()
         # -----user two orderedDice to store ori sub , video and rename sub file,
@@ -675,6 +715,7 @@ class rename_frame:
         mapping_orisub_and_sub_odic = OrderedDict()
         videonum_re_h = ''
         subnum_re_h = ''
+        status = error_Code.UNKNOW_ERROR.value
         # sub_type_fil_ext = ''
 
         # -----get video file list-----
@@ -686,9 +727,7 @@ class rename_frame:
             # temp_list_lv = glob.glob('%s\\%s' % (u_in_video_path, i))
             if temp_list_lv:
                 videofile_list_ll.extend(temp_list_lv)
-
-        print(videofile_list_ll)
-
+        # print(videofile_list_ll)
 
         # -----get sub file list-----
         os.chdir(u_in_sub_path)
@@ -726,16 +765,24 @@ class rename_frame:
                     c = os.path.splitext(videofile_list_ll[count])
                     mapping_orisub_and_video_odic[i] = videofile_list_ll[count]
                     mapping_orisub_and_sub_odic[i] = "%s.%s" % (c[0], sub_type_fil_ext)
+                    # print(videofile_list_ll[count])
                     count += 1
+
 
                 # update mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic
                 self.mapping_orisub_and_video_odic.update(mapping_orisub_and_video_odic)
                 self.mapping_orisub_and_sub_odic.update(mapping_orisub_and_sub_odic)
 
-            return
+            if not self.mapping_orisub_and_video_odic or not self.mapping_orisub_and_sub_odic:
+                status = error_Code.MAPPING_LIST_EMPTY.value
+            else:
+                status = error_Code.NORMAL.value
+
+            return status, sub_file_list_ll, videofile_list_ll
 
         elif self.radiobutton_select.get() == 2:
-            return
+            status = error_Code.MAPPING_LIST_EMPTY.value
+            return status, sub_file_list_ll, videofile_list_ll
         # -----manually matching method-----
         else:
             # -----Generate video keyword compile-----
@@ -749,6 +796,7 @@ class rename_frame:
                     key_aft = ''
                 videonum_re_h = re.compile(r'%s(.*)%s'
                                            % (re.escape(key_prv), re.escape(key_aft)))
+
             # -----Generate video keyword compile-----
             sub_key_re_h = re.match(r'(.*)\*(.*)', u_in_sub_keyword)
             if sub_key_re_h:
@@ -763,7 +811,7 @@ class rename_frame:
 
             # -----if uses manually mapping method, remove video filename extension and save list to ordered dict-----
             # -----change to tuple type for speed up-----
-            sub_file_list_ll = tuple(sub_file_list_ll)
+            # sub_file_list_ll = tuple(sub_file_list_ll)
             videofile_list_ll = tuple(videofile_list_ll)
 
             for i in videofile_list_ll:
@@ -771,12 +819,16 @@ class rename_frame:
                 videofile_list_odic[i] = c[0]
 
             if subfile_list_odic and videofile_list_odic:
-                print("start mapping video and sub")
+                # print("start mapping video and sub")
                 # -----save mapping table to dic-----
                 for s_name_j in subfile_list_odic:
                     mapping_state_lv = 0
                     # s_key_lv = list(map(int, (subnum_re_h.findall(s_name_j))))
-                    s_key_lv = subnum_re_h.findall(s_name_j)
+                    try:
+                        s_key_lv = subnum_re_h.findall(s_name_j)
+                    except:
+                        status = error_Code.MAPPING_LIST_EMPTY.value
+                        return status, sub_file_list_ll, videofile_list_ll
 
                     if s_key_lv:
                         try:
@@ -785,12 +837,17 @@ class rename_frame:
                             continue
                     else:
                         continue
-                    # print(s_key_lv)
+
                     # s_key_lv = ''.join(subnum_re_h.findall)
                     for v_fullname_i, v_name_nonext_j in videofile_list_odic.items():
                         # print(v_name_nonext_j)
                         # v_key_lv = list(map(int, (videonum_re_h.findall(v_name_nonext_j))))
-                        v_key_lv = videonum_re_h.findall(v_name_nonext_j)
+                        try:
+                            v_key_lv = videonum_re_h.findall(v_name_nonext_j)
+                        except:
+                            status = error_Code.MAPPING_LIST_EMPTY.value
+                            return status, sub_file_list_ll, videofile_list_ll
+
                         if v_key_lv:
                             try:
                                 v_key_lv = list(map(int, v_key_lv))
@@ -816,40 +873,157 @@ class rename_frame:
             self.mapping_orisub_and_video_odic.update(mapping_orisub_and_video_odic)
             self.mapping_orisub_and_sub_odic.update(mapping_orisub_and_sub_odic)
             # self.show_list_on_view_text(mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic)
+            if not self.mapping_orisub_and_video_odic or not self.mapping_orisub_and_sub_odic:
+                status = error_Code.MAPPING_LIST_EMPTY.value
+            else:
+                status = error_Code.NORMAL.value
 
-    def show_list_on_view_text(self, mapping_orisub_and_video_odic, mapping_orisub_and_sub_odic):
+            return status, sub_file_list_ll, videofile_list_ll
+
+    def show_list_on_view_text(self, mapping_ok, sub_list=None, video_list=None):
         # print (mapping_orisub_and_sub_odic[])
+        # Find mapping list, show origin file in left view, mapping file in center view, result in right view
+        print("show mapping_status: %d" % mapping_ok)
+        if mapping_ok:
+            self.view_left_text.config(state="normal")
+            self.view_center_text.config(state="normal")
+            self.view_right_text.config(state="normal")
+            for i, j in self.mapping_orisub_and_video_odic.items():
+                # print(mapping_orisub_and_sub_odic[i])
+                # if not (user_mouse_left_select_list or user_mouse_center_select_list):
+                self.view_left_text.insert(INSERT, "%s\n" % i)
+                self.view_center_text.insert(INSERT, "%s\n" % j, 'info2')
 
-        self.view_left_text.config(state="normal")
-        self.view_center_text.config(state="normal")
-        self.view_right_text.config(state="normal")
-        for i, j in mapping_orisub_and_video_odic.items():
-            # print(mapping_orisub_and_sub_odic[i])
-            # if not (user_mouse_left_select_list or user_mouse_center_select_list):
-            self.view_left_text.insert(INSERT, "%s\n" % i)
-            self.view_center_text.insert(INSERT, "%s\n" % j)
+                self.view_right_text.insert(INSERT, "%s\n" % i)
+                self.view_right_text.insert(INSERT, "%s\n" % j, 'info2')
+                self.view_right_text.insert(INSERT, "%s\n\n" % self.mapping_orisub_and_sub_odic[i], 'info')
+                # print(i, mapping_orisub_and_sub_odic[i])
+            self.view_left_text.config(state="disable")
+            self.view_center_text.config(state="disable")
+            self.view_right_text.config(state="disable")
+        # not find mapping list, show origin file in left view, mapping file in center view,
+        # don't show result in right view
+        else:
+            self.view_left_text.config(state="normal")
+            self.view_center_text.config(state="normal")
 
-            self.view_right_text.insert(INSERT, "%s\n" % i)
-            self.view_right_text.insert(INSERT, "%s\n" % j)
-            self.view_right_text.insert(INSERT, "%s\n" % mapping_orisub_and_sub_odic[i], 'info')
-            # print(i, mapping_orisub_and_sub_odic[i])
-        self.view_left_text.config(state="disable")
-        self.view_center_text.config(state="disable")
-        self.view_right_text.config(state="disable")
+            for i in sub_list:
+                # print(mapping_orisub_and_sub_odic[i])
+                # if not (user_mouse_left_select_list or user_mouse_center_select_list):
+                self.view_left_text.insert(INSERT, "%s\n" % i)
+            for j in video_list:
+                self.view_center_text.insert(INSERT, "%s\n" % j, 'info2')
+
+                # print(i, mapping_orisub_and_sub_odic[i])
+            self.view_left_text.config(state="disable")
+            self.view_center_text.config(state="disable")
+
+
 
     def start_rename(self):
         # -----Check preview is done, if not, wait preview done-----
         while self.timer_running_fl:
-            pass
+            sleep(0.3)
 
-    def start_mappint_rename(self):
+        c = tkinter.messagebox.askyesno("Start Rename", "確定要重新修改檔名?", parent=self.top)
+        if c:
+            # -----OK! start to rename
+            if self.status == error_Code.NORMAL.value:
+                # -----Write config to setting-----
+                self.write_config(1)
+
+                for i, v in self.rename_ori_and_rename_odic.items():
+                    os.rename(i, v)
+
+                self.show_preview_on_textview()
+            else:
+                tkinter.messagebox.showerror("Error", "Rename error! Error code is: %d" % self.status,
+                                             parent=self.top)
+        else:
+            self.show_preview_on_textview()
+
+    def start_mapping_rename(self):
+        # -----Check preview is done, if not, wait preview done-----
         while self.timer_running_fl:
-            pass
+            sleep(0.3)
+
+        c = tkinter.messagebox.askyesno("Start Rename", "確定要重新修改檔名?", parent=self.top)
+        if c:
+            # -----OK! start to rename
+            if self.status == error_Code.NORMAL.value:
+                # -----Write config to setting-----
+                self.write_config(0)
+
+                for i, v in self.mapping_orisub_and_sub_odic.items():
+                    os.rename(i, v)
+
+                self.show_preview_on_textview()
+            else:
+                tkinter.messagebox.showerror("Error", "Mapping rename error! Error code is: %d" % self.status,
+                                             parent=self.top)
+        else:
+            self.show_preview_on_textview()
+
+    def write_config(self, is_rename):
+        config_lh = configparser.ConfigParser()
+        file_ini_lh = open(self.setting_ini_file_name, 'r', encoding='utf16')
+        config_lh.read_file(file_ini_lh)
+        file_ini_lh.close()
+
+        config_lh.set('Mapping', 'use_same_path', str(self.setting_ini_dic['use_same_path_ini']))
+        try:
+            config_lh = configparser.ConfigParser()
+            file_ini_lh = open(self.setting_ini_file_name, 'r', encoding='utf16')
+            config_lh.read_file(file_ini_lh)
+            file_ini_lh.close()
+
+            file_write_ini_lh = open(self.setting_ini_file_name, 'w', encoding='utf16')
+
+            # if is_rename:
+            #     if config_lh.get('Rename', 'input_rename') != self.setting_ini_dic['input_rename_ini']:
+            #         config_lh.set('Rename', 'input_rename', self.setting_ini_dic['input_rename_ini'])
+            #     if config_lh.get('Rename', 'digit_number') != self.setting_ini_dic['digit_number_ini']:
+            #         config_lh.set('Rename', 'digit_number', self.setting_ini_dic['digit_number_ini'])
+            #     if config_lh.get('Rename', 'start_number') != self.setting_ini_dic['start_number_ini']:
+            #         config_lh.set('Rename', 'start_number', self.setting_ini_dic['start_number_ini'])
+            # else:
+            #     if config_lh.get('Mapping', 'mappingpath') != self.setting_ini_dic['videopath_ini']:
+            #         config_lh.set('Mapping', 'mappingpath', self.setting_ini_dic['videopath_ini'])
+            #     if config_lh.get('Mapping', 'mappingtype') != self.setting_ini_dic['videotype_ini']:
+            #         config_lh.set('Mapping', 'mappingtype', self.setting_ini_dic['videotype_ini'])
+            #     if config_lh.get('Mapping', 'videokeyword') != self.setting_ini_dic['videokeyword_ini']:
+            #         config_lh.set('Mapping', 'videokeyword', str(self.setting_ini_dic['videokeyword_ini']))
+            #     if config_lh.get('Mapping', 'subkeyword') != self.setting_ini_dic['subkeyword_ini']:
+            #         config_lh.set('Mapping', 'subkeyword', str(self.setting_ini_dic['subkeyword_ini']))
+            #     if int(config_lh.get('Mapping', 'use_same_path')) != self.setting_ini_dic['use_same_path_ini']:
+            #         config_lh.set('Mapping', 'use_same_path', str(self.setting_ini_dic['use_same_path_ini']))
+
+            if is_rename:
+                config_lh.set('Rename', 'input_rename', self.setting_ini_dic['input_rename_ini'])
+                config_lh.set('Rename', 'digit_number', self.setting_ini_dic['digit_number_ini'])
+                config_lh.set('Rename', 'start_number', self.setting_ini_dic['start_number_ini'])
+            else:
+                config_lh.set('Mapping', 'mappingpath', self.setting_ini_dic['videopath_ini'])
+                config_lh.set('Mapping', 'mappingtype', self.setting_ini_dic['videotype_ini'])
+                config_lh.set('Mapping', 'videokeyword', str(self.setting_ini_dic['videokeyword_ini']))
+                config_lh.set('Mapping', 'subkeyword', str(self.setting_ini_dic['subkeyword_ini']))
+                config_lh.set('Mapping', 'use_same_path', str(self.setting_ini_dic['use_same_path_ini']))
+
+            config_lh.write(file_write_ini_lh)
+            file_write_ini_lh.close()
+
+        except Exception:
+            self.status = error_Code.FILE_ERROR.value
+
+            tkinter.messagebox.showerror("Error!", "Error! Write setting to ini file fail, please create UTF-16 format "
+                                         + self.setting_ini_file_name+" in tool path\n"
+                                         "if file already exist, please check file format is correctly",
+                                         parent=self.top)
 
     def close_ren_frame(self, event=None):
-        print("current path: "+os.getcwd())
+        # print("current path: %s" % os.getcwd())
         os.chdir(self.app_current_path)
-        print("change to path: " + os.getcwd())
+        # print("change to path: %s" % os.getcwd())
 
         self.stop_count_timer()
         self.top.destroy()

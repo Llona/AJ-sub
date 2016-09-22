@@ -178,7 +178,6 @@ class replace_Sub_Gui(Frame):
         self.sub_path_label = Label(self.user_input_frame, text='SUB Path', style='Tsub_path_label.TLabel')
         self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.078, relheight=0.166)
 
-
         # self.convert_clipboard
         # self.print_about
         # self.replace_all_sub_in_path
@@ -225,7 +224,6 @@ class replace_Sub_Gui(Frame):
     #             # self.vert_scrollbar.grid()
     #             # self.hor_scrollbar.grid()
     #             # self.hide_log_button.grid()
-        pass
 
     def press_key_enter(self, event=None):
         self.replace_all_sub_in_path()
@@ -470,6 +468,9 @@ if __name__ == '__main__':
     root = Tk()
     root.title(title)
     root.iconbitmap('icons\\main.ico')
+
+    sub_setting_name = "%s\\%s" % (os.getcwd(), sub_setting_name)
+    sub_database_name = "%s\\%s" % (os.getcwd(), sub_database_name)
 
     if not check_all_file_status():
         tkinter.messagebox.showerror("Error", "Necessary file is not found! \n\nPlease check below is exist or "
