@@ -14,7 +14,11 @@ Ver 4.3.0 -
     2. Add convert clipboard function
     3. Modify main process for error handling
     4. Add R/W setting file error handling
-Ver 4.3.5 - Add rename sub file to match video file name
+Ver 4.4.0 - Add rename sub file to match video file name
+Ver 4.5.0 -
+    1. Add rename and mapping function
+    2. Change all text and notify message
+    3. Change icon
 """
 
 from tkinter import *
@@ -35,7 +39,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.03.50"
+version = "v4.05.0"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -139,7 +143,7 @@ class replace_Sub_Gui(Frame):
         self.VScroll1['command'] = self.log_txt.yview
 
         self.style.configure('Tclip_button.TButton', font=('iLiHei', 9))
-        self.clip_button = Button(self.user_input_frame, text='Convert Clipboard', command=self.convert_clipboard, style='Tclip_button.TButton')
+        self.clip_button = Button(self.user_input_frame, text='剪貼簿轉碼', command=self.convert_clipboard, style='Tclip_button.TButton')
         self.clip_button.place(relx=0.832, rely=0.497, relwidth=0.137, relheight=0.220)
 
         self.style.configure('Thelp_button.TButton', font=('iLiHei', 9))
@@ -147,11 +151,11 @@ class replace_Sub_Gui(Frame):
         self.help_button.place(relx=0.562, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Tstart_button.TButton', font=('iLiHei', 9))
-        self.start_button = Button(self.user_input_frame, text='Start', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
+        self.start_button = Button(self.user_input_frame, text='轉碼', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
         self.start_button.place(relx=0.281, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Trename_button.TButton', font=('iLiHei', 9))
-        self.rename_button = Button(self.user_input_frame, text='Sub Rename', command=self.show_rename_frame, style='Trename_button.TButton')
+        self.rename_button = Button(self.user_input_frame, text='啟動~ 檔名君', command=self.show_rename_frame, style='Trename_button.TButton')
         self.rename_button.place(relx=0.832, rely=0.166, relwidth=0.137, relheight=0.200)
 
         self.sub_path_entryVar = StringVar(value=self.subpath_ini)
@@ -171,12 +175,12 @@ class replace_Sub_Gui(Frame):
         self.version_state.place(relx=0.01, rely=0.87, relwidth=0.116, relheight=0.13)
 
         self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.sub_type_label = Label(self.user_input_frame, text='SUB Type', style='Tsub_type_label.TLabel')
-        self.sub_type_label.place(relx=0.01, rely=0.380, relwidth=0.095, relheight=0.13)
+        self.sub_type_label = Label(self.user_input_frame, text='轉換檔案類型', style='Tsub_type_label.TLabel')
+        self.sub_type_label.place(relx=0.01, rely=0.380, relwidth=0.200, relheight=0.13)
 
         self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei', 10))
-        self.sub_path_label = Label(self.user_input_frame, text='SUB Path', style='Tsub_path_label.TLabel')
-        self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.078, relheight=0.166)
+        self.sub_path_label = Label(self.user_input_frame, text='轉換檔案路徑', style='Tsub_path_label.TLabel')
+        self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.200, relheight=0.166)
 
         # self.convert_clipboard
         # self.print_about
@@ -229,10 +233,17 @@ class replace_Sub_Gui(Frame):
         self.replace_all_sub_in_path()
 
     def convert_clipboard(self):
+        # -----Clear text widge for log-----
+        # self.log_txt.config(state="normal")
+        # self.log_txt.delete('1.0', END)
+        # self.log_txt.config(state="disable")
+
         clip_content_lv = self.clipboard_get()
         self.clipboard_clear()
         clip_content_lv = langconver.convert_lang_select(clip_content_lv, 's2t')
         self.clipboard_append(clip_content_lv)
+
+        self.setlog("剪貼簿轉換完成!!!", 'info')
 
     def print_about(self):
         tkinter.messagebox.showinfo("About", self.help_text)
@@ -339,9 +350,9 @@ class replace_Sub_Gui(Frame):
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
                     # -----convert to TC language-----
-                    self.setlog_large("Convert: %s" % i)
+                    self.setlog_large("轉碼中: %s" % i)
                     tw_str_lv = langconver.s2tw(sub_content_lv)
-                    self.setlog_large("Replace font set: %s" % i, 'info2')
+                    self.setlog_large("替換字串: %s" % i, 'info2')
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
                         subcontent_write_h = open(i, 'w', encoding='utf8')
@@ -355,9 +366,9 @@ class replace_Sub_Gui(Frame):
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
             # -----convert to TC language-----
-            self.setlog_large("Convert: %s" % i)
+            self.setlog_large("轉碼中: %s" % i)
             tw_str_lv = langconver.s2tw(sub_content_lv)
-            self.setlog_large("Replace font set: %s" % i, 'info2')
+            self.setlog_large("替換字串: %s" % i, 'info2')
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
@@ -382,18 +393,18 @@ class replace_Sub_Gui(Frame):
         self.user_input_type = self.sub_type_entry.get()
         # -----Check user input in GUI-----
         if self.user_input_path == "" or self.user_input_type == "":
-            tkinter.messagebox.showinfo("message", "Please input SUB file PATH and TYPE")
+            tkinter.messagebox.showinfo("message", "請輸入路徑和類型")
             return
         if not os.path.exists(self.user_input_path):
-            tkinter.messagebox.showerror("message", "Error! can't find sub path")
+            tkinter.messagebox.showerror("Error", "路徑錯誤")
             return
         # -----get config ini file setting-----
         self.subpath_ini = self.read_config(sub_setting_name, 'Global', 'subpath')
         self.subfiletype_list_ini = self.read_config(sub_setting_name, 'Global', 'subtype')
         if self.subpath_ini == error_Type.FILE_ERROR.value or self.subfiletype_list_ini == error_Type.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
-                                         "Error! Read setting ini file fail! "
-                                         "please create UTF-16 format " + sub_setting_name + " in tool path")
+                                         "錯誤! 讀取ini設定檔發生錯誤! "
+                                         "請在AJSub目錄下使用UTF-16格式建立 " + sub_setting_name)
             return
 
         # -----remove '\' or '/' in end of path string-----
@@ -402,17 +413,17 @@ class replace_Sub_Gui(Frame):
 
         # -----Store user input path and type into Setting.ini config file-----
         if not self.user_input_path == self.subpath_ini:
-            self.setlog("Write new path setting to: " + sub_setting_name, "info")
+            self.setlog("新的路徑設定寫入設定檔: " + sub_setting_name, "info")
             # print("path not match, write new path to ini")
             w_file_stat_lv = self.write_config(sub_setting_name,  'Global', 'subpath', self.user_input_path)
         if not self.user_input_type == self.subfiletype_list_ini:
-            self.setlog("Write new type setting to: " + sub_setting_name, "info")
+            self.setlog("新的檔案類型設定寫入設定檔: " + sub_setting_name, "info")
             # print("type not match, write new type list to ini")
             w_file_stat_lv = self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
         if w_file_stat_lv == error_Type.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
-                                         "Error! Write setting ini file fail! "
-                                         "please create UTF-16 format " + sub_setting_name + " in AJSub path")
+                                         "錯誤! 寫入ini設定檔發生錯誤! "
+                                         "請在AJSub目錄下使用UTF-16格式建立 " + sub_setting_name)
             return
 
         # ----Split file type string and store to list-----
@@ -446,11 +457,11 @@ class replace_Sub_Gui(Frame):
         self.update_idletasks()
 
         if status:
-            self.setlog("***Success! Convert and Replace all file done.***", "info")
-            tkinter.messagebox.showinfo("message", "Convert and Replace all file done.")
+            self.setlog("***順利完成! 轉碼與取代字串成功***", "info")
+            tkinter.messagebox.showinfo("message", "轉碼與取代字串成功")
         else:
-            self.setlog("***Error! Convert and Replace file error, please check the log.***", "error")
-            tkinter.messagebox.showerror("message Error", "Convert and Replace file error, please check the log.")
+            self.setlog("***錯誤! 轉碼與取代字串發生錯誤, 請參考log視窗***", "error")
+            tkinter.messagebox.showerror("Error", "轉碼與取代字串發生錯誤, 請參考log視窗")
 
 
 def check_all_file_status():
@@ -473,8 +484,8 @@ if __name__ == '__main__':
     sub_database_name = "%s\\%s" % (os.getcwd(), sub_database_name)
 
     if not check_all_file_status():
-        tkinter.messagebox.showerror("Error", "Necessary file is not found! \n\nPlease check below is exist or "
-                                              "please re-install AJSub:\n"
+        tkinter.messagebox.showerror("Error", "遺失必要檔案! \n\n請確認AJSub目錄有以下檔案存在, 或 "
+                                              "重新安裝AJSub:\n"
                                               "1. " + sub_setting_name + "\n"
                                               "2. " + sub_database_name + "\n"
                                               "3. icons\\main.ico")
@@ -491,8 +502,8 @@ if __name__ == '__main__':
         config_h.clear()
     except:
         tkinter.messagebox.showerror("Error",
-                                     "Read setting fail " + sub_setting_name + " or " + sub_database_name + " fail!\n"
-                                     "Please check these file is correct (unicode format) or re-install AJSub")
+                                     "讀取設定檔 " + sub_setting_name + " 或 " + sub_database_name + " 錯誤!\n"
+                                     "請確認檔案格式為UTF-16 (unicode format) 或重新安裝AJSub")
         sys.exit(0)
 
     # -----Get database list to dic structure-----
