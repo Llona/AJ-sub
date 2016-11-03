@@ -19,6 +19,12 @@ Ver 4.5.0 -
     1. Add rename and mapping function
     2. Change all text and notify message
     3. Change icon
+Ver 4.5.1 -
+    1. Add S2TW, S2T, T2S convert function
+    2. Add big5 type for convert function
+    3. Add help button in rename function
+    4. Add BIG5 format supported
+    5. Modify ST direction
 """
 
 from tkinter import *
@@ -39,7 +45,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.0"
+version = "v4.05.1"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -50,22 +56,28 @@ progress_idle_txt = ""
 progress_done_txt = "轉換完成!!"
 help_text = \
     "AJSub "+version+"\n\n"\
-    "   本軟體會自動將指定目錄下的所有字幕檔簡體轉為繁體\n"\
-    "   字型設定部份會轉為簡體, 這樣使用某些字型時系統才會認得\n"\
-    "   (例如方正系列的字型)\n"\
-    "   UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式\n"\
-    "   原始檔案備份在:"+backup_folder_name+"目錄下\n\n"\
-    "   使用說明:\n"\
-    "   1. 將字幕檔路徑輸入SUB type欄位\n"\
-    "   2. 輸入字幕檔類型並用逗點隔開, 如*.ass, *.ssa\n"\
-    "   3. 按下Start之後, enjoy it!!!!\n"\
+    "本軟體會自動將指定目錄下的所有指定檔案簡轉繁或繁轉簡\n" \
+    "建議使用簡體轉繁體+台灣慣用語\n\n"\
+    "轉換完成後, AJSub會將檔案內容的字型設定部份轉為簡體\n" \
+    "這樣使用某些字型時系統才會認得 (例如方正系列的字型)\n\n"\
+    "UTF-8與UTF-16檔會照原格式儲存, 其餘會自動轉UTF-8格式\n"\
+    "原始檔案備份在"+backup_folder_name+"目錄下\n\n"\
+    "使用說明:\n"\
+    "   1. 將檔案路徑輸入SUB type欄位\n"\
+    "   2. 輸入檔案類型並用逗點隔開, 如*.ass, *.ssa\n"\
+    "   3. 按下轉碼按鈕~ enjoy it!!!!\n"\
     "   4. 字型設定若需新增或修改, 請直接修改SubList.sdb\n"\
-    "   5. 按下Convert Clipboard後, 直接將剪貼簿的內容轉換為繁體\n\n"\
+    "   5. 按下剪貼簿轉碼按鈕, 可直接轉換剪貼簿的內容\n"\
+    "   6. 啟動~ 檔名君按鈕可開啟AJRen改名程式\n\n" \
+    "轉碼功能使用Yichen (Eugene) (https://github.com/yichen0831/opencc-python) 提供的OpenCC python版本\n\n" \
+    "AJSub由[Llona]設計維護, 問題回報與下載頁面: https://llona.github.io/AJ-sub/ \n\n"\
+    "=====\n"\
     "AJSub "+version+"\n"\
     "Copyright 2016\n\n"\
-    "Implement by [Llona](https://github.com/Llona/AJ-sub).\n\n"\
     "This product includes OpenCC-python, develop by:\n"\
-    "[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\n"\
+    "[Yichen (Eugene)](https://github.com/yichen0831/opencc-python).\n\n" \
+    "AJSub is implement by [Llona], \n" \
+    "Bug report and download page: https://llona.github.io/AJ-sub/"
 
 
 
@@ -109,7 +121,6 @@ class replace_Sub_Gui(Frame):
 
         # -----Set Text log fone color-----
 
-
         root.bind('<Key-Return>', self.press_key_enter)
 
         self.create_widgets()
@@ -148,11 +159,11 @@ class replace_Sub_Gui(Frame):
 
         self.style.configure('Thelp_button.TButton', font=('iLiHei', 9))
         self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
-        self.help_button.place(relx=0.562, rely=0.788, relwidth=0.105, relheight=0.200)
+        self.help_button.place(relx=0.460, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Tstart_button.TButton', font=('iLiHei', 9))
         self.start_button = Button(self.user_input_frame, text='轉碼', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
-        self.start_button.place(relx=0.281, rely=0.788, relwidth=0.105, relheight=0.200)
+        self.start_button.place(relx=0.250, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Trename_button.TButton', font=('iLiHei', 9))
         self.rename_button = Button(self.user_input_frame, text='啟動~ 檔名君', command=self.show_rename_frame, style='Trename_button.TButton')
@@ -182,6 +193,14 @@ class replace_Sub_Gui(Frame):
         self.sub_path_label = Label(self.user_input_frame, text='轉換檔案路徑', style='Tsub_path_label.TLabel')
         self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.200, relheight=0.166)
 
+        self.ComboVar = StringVar()
+        self.Combo = Combobox(self.user_input_frame, text='S2TW', state='readonly', textvariable=self.ComboVar,
+                               font=('iLiHei', 10))
+        self.Combo['values'] = ('簡轉繁+台灣慣用語', '簡轉繁', '繁轉簡')
+        self.Combo.current(0)
+        self.Combo.place(relx=0.610, rely=0.820, relwidth=0.200)
+        # self.Combo.bind('<<ComboboxSelected>>', self.get_user_conv_type)
+
         # self.convert_clipboard
         # self.print_about
         # self.replace_all_sub_in_path
@@ -205,6 +224,18 @@ class replace_Sub_Gui(Frame):
         self.log_txt.tag_config("info2", foreground="#404040")
 
         self.update_idletasks()
+
+    def get_user_conv_type(self, event=None):
+        conv_type_ls = self.Combo.current()
+        # print(conv_type_ls)
+        if conv_type_ls == 0:
+            return 's2tw'
+        elif conv_type_ls == 1:
+            return 's2t'
+        elif conv_type_ls == 2:
+            return 't2s'
+        else:
+            print('Error! combobox input is error:%s ' % conv_type_ls)
 
     def show_rename_frame(self):
         ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
@@ -240,10 +271,13 @@ class replace_Sub_Gui(Frame):
 
         clip_content_lv = self.clipboard_get()
         self.clipboard_clear()
-        clip_content_lv = langconver.convert_lang_select(clip_content_lv, 's2t')
+        conv_ls = self.get_user_conv_type()
+        # clip_content_lv = langconver.convert_lang_select(clip_content_lv, 's2t')
+        # print(conv_ls)
+        clip_content_lv = langconver.convert_lang_select(clip_content_lv, conv_ls)
         self.clipboard_append(clip_content_lv)
 
-        self.setlog("剪貼簿轉換完成!!!", 'info')
+        self.setlog("剪貼簿轉換完成!", 'info')
 
     def print_about(self):
         tkinter.messagebox.showinfo("About", self.help_text)
@@ -293,8 +327,8 @@ class replace_Sub_Gui(Frame):
             file_ini_lh.close()
             return config_lh.get(section, key)
         except:
-            self.setlog("Error! Read setting ini file fail! "
-                        "please create UTF-16 format " + filename + " in tool path", 'error')
+            self.setlog("Error! 讀取ini設定檔發生錯誤! "
+                        "請在AJSub目錄下使用UTF-16格式建立 " + filename, 'error')
             return error_Type.FILE_ERROR.value
 
     def write_config(self, filename, sections, key, value):
@@ -309,8 +343,8 @@ class replace_Sub_Gui(Frame):
             config_lh.write(file_ini_lh)
             file_ini_lh.close()
         except Exception as ex:
-            self.setlog("Error! Write setting to ini file fail, "
-                        "please create UTF-16 format "+filename+" in tool path", 'error')
+            self.setlog("Error! 寫入ini設定檔發生錯誤! "
+                        "請在AJSub目錄下使用UTF-16格式建立 " +filename, 'error')
             return error_Type.FILE_ERROR.value
 
     def store_origin_file_to_backup_folder(self, file, back_folder):
@@ -341,17 +375,24 @@ class replace_Sub_Gui(Frame):
                             subcontent_h = open(i, 'r', encoding='gb2312')
                             sub_content_lv = subcontent_h.read()
                         except:
-                            status_lv = False
-                            self.setlog("Error! can't read format: " + i, 'error')
-                            continue
+                            try:
+                                subcontent_h.close()
+                                subcontent_h = open(i, 'r', encoding='big5')
+                                sub_content_lv = subcontent_h.read()
+                            except:
+                                status_lv = False
+                                self.setlog("Error! 無法開啟格式: " + i, 'error')
+                                continue
                     # -----For GBK and GB2312 format-----
                     subcontent_h.close()
                     # -----backup origin sub file to backup folder-----
                     self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
                     sub_content_temp_lv = sub_content_lv
-                    # -----convert to TC language-----
+                    # -----convert-----
                     self.setlog_large("轉碼中: %s" % i)
-                    tw_str_lv = langconver.s2tw(sub_content_lv)
+                    # tw_str_lv = langconver.s2tw(sub_content_lv)
+                    conv_ls = self.get_user_conv_type()
+                    tw_str_lv = langconver.convert_lang_select(sub_content_lv, conv_ls)
                     self.setlog_large("替換字串: %s" % i, 'info2')
                     tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
                     if sub_content_temp_lv != tw_str_lv:
@@ -365,9 +406,11 @@ class replace_Sub_Gui(Frame):
             self.store_origin_file_to_backup_folder(i, '%s\\%s' % (self.user_input_path, backup_folder_name))
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
-            # -----convert to TC language-----
+            # -----convert-----
             self.setlog_large("轉碼中: %s" % i)
-            tw_str_lv = langconver.s2tw(sub_content_lv)
+            # tw_str_lv = langconver.s2tw(sub_content_lv)
+            conv_ls = self.get_user_conv_type()
+            tw_str_lv = langconver.convert_lang_select(sub_content_lv, conv_ls)
             self.setlog_large("替換字串: %s" % i, 'info2')
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
@@ -433,16 +476,23 @@ class replace_Sub_Gui(Frame):
         self.user_input_type = set(self.user_input_type)
         # print(self.user_input_type)
 
+        # -----Get sub file list by type-----
+        sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
+        if not sub_file_list:
+            # convert file list is empty
+            tkinter.messagebox.showwarning("Error", "錯誤! 在指定的目錄中找不到檔案! 請確認檔案路徑與類型")
+            return
+
+        # print(sub_file_list)
+
         # -----Dim button for string converting-----
         self.version_state["text"] = progress_txt
         # self.version_state["fg"] = "blue"
         self.start_button["state"] = 'disable'
         # self.help_button["state"] = 'disable'
+        self.clip_button["state"] = 'disable'
         self.update_idletasks()
 
-        # -----Get sub file list by type-----
-        sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
-        # print(sub_file_list)
         # -----make backup folder for store origin sub files-----
         if not os.path.exists(self.user_input_path+'\\'+backup_folder_name):
             os.makedirs(self.user_input_path+'\\'+backup_folder_name)
@@ -454,6 +504,7 @@ class replace_Sub_Gui(Frame):
         # self.version_state["fg"] = "blue"
         self.start_button["state"] = 'normal'
         # self.help_button["state"] = 'normal'
+        self.clip_button["state"] = 'normal'
         self.update_idletasks()
 
         if status:

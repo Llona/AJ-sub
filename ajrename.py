@@ -53,6 +53,31 @@ class rename_frame:
         self.top.grab_set()
         self.top.focus_force()
 
+        self.help_text = \
+            "AJRen \n\n" \
+            "本軟體為 AJSub 附屬應用程式, 可快速方便的批次更改檔名\n" \
+            "原始檔名視窗為目錄中的原始檔名, \n"\
+            "在結果預覽視窗可預覽改名結果, 黑色為原始檔名, 綠色為更改後的檔名\n\n"\
+            "更改檔名使用說明:\n" \
+            "1. 輸入檔案路徑與檔案類型, 如*.ass, *.ssa\n" \
+            "2. 取代為欄位中, *的部份會替代為數字, 例如輸入*_image\n" \
+            "    會將原始檔改名為如01_image, 02_image...\n"\
+            "3. 輸入編號位數與起始位數\n"\
+            "4. 在預覽視窗確認改名結果正確後, 按下更改檔名按鈕\n"\
+            "    即可照設定修改檔名\n"\
+            "5. 如果目錄同時有簡體和繁體字幕檔, 例如xxxSC.xx 和xxxTC.xx\n" \
+            "    勾選碰運氣排序, 運氣好可以分離這些檔案喔\n"\
+            "6. 在同一目錄中若只想針對幾個檔案改名\n"\
+            "    可在原始檔名視窗用滑鼠標記起來, 預覽視窗可看到結果\n\n" \
+            "比對更改檔名模式:\n"\
+            "批次將原始檔案配合比對檔案修改成對應的檔名, 例如:\n"\
+            "    目錄中有aa_01.ssc, 01_video.mp4, 可透過此功能比對後, 將\n"\
+            "    aa_01.ssc改為01_video.ssc (02, 03, 04...etc, 一次修改完成)\n\n"\
+            "AJRen由Llona開發維護, \n" \
+            "詳細功能說明, 問題回報與下載頁面: https://llona.github.io/AJ-sub/ \n\n" \
+            "Implement by [Llona], \n" \
+            "Bug report and download page: https://llona.github.io/AJ-sub/"
+
         try:
             # -----Get all setting from Settings.ini-----
             file_ini_h = open(setting_name, encoding='utf16')
@@ -142,6 +167,9 @@ class rename_frame:
         self.style.configure('Trename_button.TButton', font=('iLiHei', 10))
         self.rename_button = Button(self.rename_frame, text='更改檔名', command=self.start_rename, style='Trename_button.TButton')
         self.rename_button.place(relx=0.700, rely=0.835, relwidth=0.260, relheight=0.111)
+
+        self.help_button = Button(self.rename_frame, text='Help', command=self.print_about, style='Trename_button.TButton')
+        self.help_button.place(relx=0.350, rely=0.835, relwidth=0.260, relheight=0.111)
 
         self.style.configure('Tstart_button.TButton', font=('iLiHei', 10))
         self.start_button = Button(self.mapping_frame, text='比對改名', command=self.start_mapping_rename, style='Tstart_button.TButton')
@@ -304,6 +332,9 @@ class rename_frame:
         # -----Re-flash all GUI item-----
         self.turn_on_mapping_selected()
 
+    def print_about(self):
+        tkinter.messagebox.showinfo("About", self.help_text, parent=self.top)
+
     def view_select_get_and_mark_select(self, event=None):
         self.stop_count_timer()
         try:
@@ -323,7 +354,7 @@ class rename_frame:
             # print(user_mouse_left_select_list)
             self.show_preview_on_textview(user_mouse_left_select_list)
         except:
-            print("select error or empty")
+            # print("select error or empty")
             self.show_preview_on_textview()
 
     def view_select_all(self, event=None):
