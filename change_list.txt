@@ -22,9 +22,12 @@ V4.03.00, 2016/08/23
 3. Modify main process for error handling
 4. Add R/W setting file error handling
 
-Ver 4.5.1 -
+Ver 04.05.01 -
 1. Add S2TW, S2T, T2S convert function
 2. Add big5 type for convert function
 3. Add help button in rename function
 4. Add BIG5 format supported
 5. Modify ST direction
+
+Ver 04.05.02, 2017/01/17
+Modify ST direction
