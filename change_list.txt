@@ -30,4 +30,7 @@ Ver 04.05.01 -
 5. Modify ST direction
 
 Ver 04.05.02, 2017/01/17
-Modify ST direction
+1. Modify ST direction
+
+Ver 04.05.03, 2017/01/17
+1. Modify ST direction

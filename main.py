@@ -26,6 +26,7 @@ Ver 4.5.1 -
     4. Add BIG5 format supported
     5. Modify ST dictionary
 Ver 4.5.2 - Modify ST dictionary
+Ver 4.5.3 - Modify ST dictionary
 """
 
 from tkinter import *
@@ -46,7 +47,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.2"
+version = "v4.05.3"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
