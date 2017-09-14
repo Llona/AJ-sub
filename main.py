@@ -27,6 +27,7 @@ Ver 4.5.1 -
     5. Modify ST dictionary
 Ver 4.5.2 - Modify ST dictionary
 Ver 4.5.3 - Modify ST dictionary
+Ver 4.5.4 - Fix some folder name can't access issue
 """
 
 from tkinter import *
@@ -47,7 +48,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.3"
+version = "v4.05.4"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -383,7 +384,7 @@ class replace_Sub_Gui(Frame):
                                 sub_content_lv = subcontent_h.read()
                             except:
                                 status_lv = False
-                                self.setlog("Error! 無法開啟格式: " + i, 'error')
+                                self.setlog("Error! 無法開啟或寫入檔案, 請確認檔案非唯讀: %s " % i, 'error')
                                 continue
                     # -----For GBK and GB2312 format-----
                     subcontent_h.close()
