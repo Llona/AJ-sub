@@ -28,6 +28,7 @@ Ver 4.5.1 -
 Ver 4.5.2 - Modify ST dictionary
 Ver 4.5.3 - Modify ST dictionary
 Ver 4.5.4 - Fix some folder name can't access issue
+Ver 4.5.5 - Add convert all sub folder function
 """
 
 from tkinter import *
@@ -48,7 +49,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.4"
+version = "v4.05.5"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -162,11 +163,11 @@ class replace_Sub_Gui(Frame):
 
         self.style.configure('Thelp_button.TButton', font=('iLiHei', 9))
         self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
-        self.help_button.place(relx=0.460, rely=0.788, relwidth=0.105, relheight=0.200)
+        self.help_button.place(relx=0.380, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Tstart_button.TButton', font=('iLiHei', 9))
         self.start_button = Button(self.user_input_frame, text='轉碼', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
-        self.start_button.place(relx=0.250, rely=0.788, relwidth=0.105, relheight=0.200)
+        self.start_button.place(relx=0.220, rely=0.788, relwidth=0.105, relheight=0.200)
 
         self.style.configure('Trename_button.TButton', font=('iLiHei', 9))
         self.rename_button = Button(self.user_input_frame, text='啟動~ 檔名君', command=self.show_rename_frame, style='Trename_button.TButton')
@@ -198,11 +199,16 @@ class replace_Sub_Gui(Frame):
 
         self.ComboVar = StringVar()
         self.Combo = Combobox(self.user_input_frame, text='S2TW', state='readonly', textvariable=self.ComboVar,
-                               font=('iLiHei', 10))
+                               font=('iLiHei', 9))
         self.Combo['values'] = ('簡轉繁+台灣慣用語', '簡轉繁', '繁轉簡')
         self.Combo.current(0)
-        self.Combo.place(relx=0.610, rely=0.820, relwidth=0.200)
+        self.Combo.place(relx=0.520, rely=0.800, relwidth=0.190)
         # self.Combo.bind('<<ComboboxSelected>>', self.get_user_conv_type)
+
+        self.sub_folder_chbuttonVar = IntVar(value=0)
+        self.style.configure('Tlucky_sort_chbutton.TCheckbutton', font=('iLiHei', 9))
+        self.sub_folder_chbutton = Checkbutton(self.user_input_frame, text='包含子目錄', variable=self.sub_folder_chbuttonVar, style='Tlucky_sort_chbutton.TCheckbutton')
+        self.sub_folder_chbutton.place(relx=0.750, rely=0.815, relwidth=0.160)
 
         # self.convert_clipboard
         # self.print_about
@@ -479,6 +485,26 @@ class replace_Sub_Gui(Frame):
         self.user_input_type = set(self.user_input_type)
         # print(self.user_input_type)
 
+        # ---only convert a specific folder---
+        status = True
+        if self.sub_folder_chbuttonVar.get() == 0:
+            status = self.start_conversion()
+        else:
+            # ---convert all sub folder---
+            ori_user_input_path = self.user_input_path
+            sub_folder_lists = replace_sub.get_all_sub_folder_name(self.user_input_path)
+            for sub_folder in sub_folder_lists:
+                # skip backup folder
+                if sub_folder.find(backup_folder_name) == -1:
+                    self.user_input_path = sub_folder
+                    status_tmp = self.start_conversion()
+                    if not status_tmp:
+                        status = status_tmp
+            self.user_input_path = ori_user_input_path
+
+        self.show_done_popup(status)
+
+    def start_conversion(self):
         # -----Get sub file list by type-----
         sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
         if not sub_file_list:
@@ -510,6 +536,9 @@ class replace_Sub_Gui(Frame):
         self.clip_button["state"] = 'normal'
         self.update_idletasks()
 
+        return status
+
+    def show_done_popup(self, status):
         if status:
             self.setlog("***順利完成! 轉碼與取代字串成功***", "info")
             tkinter.messagebox.showinfo("message", "轉碼與取代字串成功")
@@ -563,7 +592,7 @@ if __name__ == '__main__':
     # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
     # -----Start GUI class-----
-    root.geometry('784x614')
+    root.geometry('880x670')
     app = replace_Sub_Gui(master=root, subfilepath_ini=subpath,
                           subfiletype_ini=subfiletype_list, help_text=help_text)
     # -----Start main loop-----

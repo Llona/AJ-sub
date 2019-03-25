@@ -61,6 +61,14 @@ def get_file_list(sub_path, file_type):
     return subfile_list_ll
 
 
+def get_all_sub_folder_name(folder_path):
+    sub_folder_list = []
+    for root_n, dirs, files in os.walk(folder_path, topdown=False):
+        for name in dirs:
+            sub_folder_list.append(os.path.join(root_n, name))
+            # print(os.path.join(root_n, name))
+    return sub_folder_list
+
 # -----Read all sub file and replace string that define in database file-----
 # 1. sub file list
 # 2. string database store in dic structure
