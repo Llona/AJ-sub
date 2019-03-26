@@ -29,6 +29,9 @@ Ver 4.5.2 - Modify ST dictionary
 Ver 4.5.3 - Modify ST dictionary
 Ver 4.5.4 - Fix some folder name can't access issue
 Ver 4.5.5 - Add convert all sub folder function
+Ver 4.5.6 -
+    1. Fix show error popup when file type didn't find in sub folder
+    2. Fix didn't convert root folder when use sub folder convert function issue
 """
 
 from tkinter import *
@@ -49,7 +52,7 @@ import langconver
 import ajrename
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.5"
+version = "v4.05.6"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -496,6 +499,7 @@ class replace_Sub_Gui(Frame):
             for sub_folder in sub_folder_lists:
                 # skip backup folder
                 if sub_folder.find(backup_folder_name) == -1:
+                    self.setlog("轉換子目錄: %s" % sub_folder, "info")
                     self.user_input_path = sub_folder
                     status_tmp = self.start_conversion()
                     if not status_tmp:
@@ -509,8 +513,12 @@ class replace_Sub_Gui(Frame):
         sub_file_list = replace_sub.get_file_list(self.user_input_path, self.user_input_type)
         if not sub_file_list:
             # convert file list is empty
-            tkinter.messagebox.showwarning("Error", "錯誤! 在指定的目錄中找不到檔案! 請確認檔案路徑與類型")
-            return
+            if self.sub_folder_chbuttonVar.get() == 0:
+                tkinter.messagebox.showwarning("Error", "錯誤! 在指定的目錄中找不到檔案! 請確認檔案路徑與類型")
+                return False
+            else:
+                self.setlog("此目錄中無指定檔案類型: %s" % self.user_input_path, "error")
+                return True
 
         # print(sub_file_list)
 
