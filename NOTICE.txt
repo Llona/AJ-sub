@@ -1,5 +1,5 @@
 AJSub
-Copyright 2016
+Copyright 2022
 
 Implement by [Llona](https://github.com/Llona/AJ-sub).
 

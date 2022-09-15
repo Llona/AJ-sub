@@ -44,3 +44,12 @@ Ver 4.5.5, 2019/03/25
 Ver 4.5.6, 2019/03/26
 1. Fix show error popup when file type didn't find in sub folder
 2. Fix didn't convert root folder when use sub folder convert function issue
+
+Ver 4.5.7, 2022/09/14
+1. Add browser folder button
+2. Renew sub mapping database
+3. Improve open file process
+4. Modify GUI font
+5. Add select backup file function
+6. Improve exe file package method
+7. Fix GUI font blurry problem

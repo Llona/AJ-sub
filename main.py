@@ -32,11 +32,20 @@ Ver 4.5.5 - Add convert all sub folder function
 Ver 4.5.6 -
     1. Fix show error popup when file type didn't find in sub folder
     2. Fix didn't convert root folder when use sub folder convert function issue
+Ver 4.5.7 -
+    1. Add browser folder button
+    2. Renew sub mapping database
+    3. Improve open file process
+    4. Modify GUI font
+    5. Add select backup file function
+    6. Improve exe file package method
+    7. Fix GUI font blurry problem
 """
 
 from tkinter import *
 from tkinter.ttk import *
 from tkinter.font import Font
+from tkinter import filedialog
 import tkinter.messagebox
 import re
 import configparser
@@ -50,9 +59,10 @@ from enum import Enum
 import replace_sub
 import langconver
 import ajrename
+from ctypes import windll
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.6"
+version = "v4.05.7"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 backup_folder_name = "backfile"
@@ -61,7 +71,7 @@ subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
 progress_txt = "強力轉換中..."
 progress_idle_txt = ""
 progress_done_txt = "轉換完成!!"
-help_text = \
+show_help_text = \
     "AJSub "+version+"\n\n"\
     "本軟體會自動將指定目錄下的所有指定檔案簡轉繁或繁轉簡\n" \
     "建議使用簡體轉繁體+台灣慣用語\n\n"\
@@ -87,13 +97,12 @@ help_text = \
     "Bug report and download page: https://llona.github.io/AJ-sub/"
 
 
-
-class error_Type(Enum):
+class ErrorType(Enum):
     NORMAL = 'NORMAL'  # define normal state
     FILE_ERROR = 'FILE_RW_ERROR'  # define file o/r/w error type
 
 
-class replace_Sub_Gui(Frame):
+class ReplaceSub(Frame):
     def __init__(self, master=None, subfilepath_ini=None, subfiletype_ini=None, help_text=None):
         Frame.__init__(self, master)
         self.master = master
@@ -137,13 +146,13 @@ class replace_Sub_Gui(Frame):
 
         self.style = Style()
 
-        self.style.configure('Tlog_frame.TLabelframe', font=('iLiHei', 10))
-        self.style.configure('Tlog_frame.TLabelframe.Label', font=('iLiHei', 10))
+        self.style.configure('Tlog_frame.TLabelframe', font=('Microsoft YaHei', 10))
+        self.style.configure('Tlog_frame.TLabelframe.Label', font=('Microsoft YaHei', 10))
         self.log_frame = LabelFrame(self.top, text='LOG', style='Tlog_frame.TLabelframe')
         self.log_frame.place(relx=0.01, rely=0.283, relwidth=0.973, relheight=0.708)
 
-        self.style.configure('Tuser_input_frame.TLabelframe', font=('iLiHei', 10))
-        self.style.configure('Tuser_input_frame.TLabelframe.Label', font=('iLiHei', 10))
+        self.style.configure('Tuser_input_frame.TLabelframe', font=('Microsoft YaHei', 10))
+        self.style.configure('Tuser_input_frame.TLabelframe.Label', font=('Microsoft YaHei', 10))
         self.user_input_frame = LabelFrame(self.top, text='輸入', style='Tuser_input_frame.TLabelframe')
         self.user_input_frame.place(relx=0.01, rely=0.011, relwidth=0.973, relheight=0.262)
 
@@ -153,65 +162,74 @@ class replace_Sub_Gui(Frame):
         self.HScroll1 = Scrollbar(self.log_frame, orient='horizontal')
         self.HScroll1.place(relx=0.01, rely=0.940, relwidth=0.958, relheight=0.055)
 
-        self.log_txtFont = Font(font=('iLiHei', 10))
+        self.log_txtFont = Font(font=('Microsoft YaHei', 10))
         self.log_txt = Text(self.log_frame, wrap='none', xscrollcommand=self.HScroll1.set, yscrollcommand=self.VScroll1.set, font=self.log_txtFont)
         self.log_txt.place(relx=0.01, rely=0.010, relwidth=0.958, relheight=0.936)
         # self.log_txt.insert('1.0', '')
         self.HScroll1['command'] = self.log_txt.xview
         self.VScroll1['command'] = self.log_txt.yview
 
-        self.style.configure('Tclip_button.TButton', font=('iLiHei', 9))
+        self.style.configure('Tclip_button.TButton', font=('Microsoft YaHei', 9))
         self.clip_button = Button(self.user_input_frame, text='剪貼簿轉碼', command=self.convert_clipboard, style='Tclip_button.TButton')
-        self.clip_button.place(relx=0.832, rely=0.497, relwidth=0.137, relheight=0.220)
+        self.clip_button.place(relx=0.160, rely=0.788, relwidth=0.137, relheight=0.200)
 
-        self.style.configure('Thelp_button.TButton', font=('iLiHei', 9))
-        self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
-        self.help_button.place(relx=0.380, rely=0.788, relwidth=0.105, relheight=0.200)
-
-        self.style.configure('Tstart_button.TButton', font=('iLiHei', 9))
+        self.style.configure('Tstart_button.TButton', font=('Microsoft YaHei', 9))
         self.start_button = Button(self.user_input_frame, text='轉碼', command=self.replace_all_sub_in_path, style='Tstart_button.TButton')
-        self.start_button.place(relx=0.220, rely=0.788, relwidth=0.105, relheight=0.200)
+        self.start_button.place(relx=0.327, rely=0.788, relwidth=0.105, relheight=0.200)
 
-        self.style.configure('Trename_button.TButton', font=('iLiHei', 9))
+        self.style.configure('Thelp_button.TButton', font=('Microsoft YaHei', 9))
+        self.help_button = Button(self.user_input_frame, text='Help', command=self.print_about, style='Thelp_button.TButton')
+        self.help_button.place(relx=0.460, rely=0.788, relwidth=0.105, relheight=0.200)
+
+        self.style.configure('Trename_button.TButton', font=('Microsoft YaHei', 9))
         self.rename_button = Button(self.user_input_frame, text='啟動~ 檔名君', command=self.show_rename_frame, style='Trename_button.TButton')
-        self.rename_button.place(relx=0.832, rely=0.166, relwidth=0.137, relheight=0.200)
+        self.rename_button.place(relx=0.832, rely=0.497, relwidth=0.137, relheight=0.200)
+
+        self.style.configure('Trename_button.TButton', font=('Microsoft YaHei', 9))
+        self.browser_button = Button(self.user_input_frame, text='瀏覽', command=self.browser_explorer, style='Trename_button.TButton')
+        self.browser_button.place(relx=0.832, rely=0.166, relwidth=0.137, relheight=0.200)
 
         self.sub_path_entryVar = StringVar(value=self.subpath_ini)
-        self.sub_path_entry = Entry(self.user_input_frame, textvariable=self.sub_path_entryVar, font=('iLiHei', 10))
+        self.sub_path_entry = Entry(self.user_input_frame, textvariable=self.sub_path_entryVar, font=('Microsoft YaHei', 10))
         self.sub_path_entry.place(relx=0.01, rely=0.180, relwidth=0.80, relheight=0.180)
 
         self.sub_type_entryVar = StringVar(value=self.subfiletype_list_ini)
-        self.sub_type_entry = Entry(self.user_input_frame, textvariable=self.sub_type_entryVar, font=('iLiHei', 10))
+        self.sub_type_entry = Entry(self.user_input_frame, textvariable=self.sub_type_entryVar, font=('Microsoft YaHei', 10))
         self.sub_type_entry.place(relx=0.01, rely=0.520, relwidth=0.80, relheight=0.190)
 
-        self.style.configure('Tversion_label.TLabel', anchor='e', font=('iLiHei', 9))
+        self.style.configure('Tversion_label.TLabel', anchor='e', font=('Microsoft YaHei', 9))
         self.version_label = Label(self.user_input_frame, text=version, state='disable', style='Tversion_label.TLabel')
         self.version_label.place(relx=0.843, rely=0.87, relwidth=0.147, relheight=0.13)
 
-        self.style.configure('Tversion_state.TLabel', anchor='w', font=('iLiHei', 9))
+        self.style.configure('Tversion_state.TLabel', anchor='w', font=('Microsoft YaHei', 9))
         self.version_state = Label(self.user_input_frame, text=progress_idle_txt, style='Tversion_state.TLabel')
         self.version_state.place(relx=0.01, rely=0.87, relwidth=0.116, relheight=0.13)
 
-        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.style.configure('Tsub_type_label.TLabel', anchor='w', font=('Microsoft YaHei', 10))
         self.sub_type_label = Label(self.user_input_frame, text='轉換檔案類型', style='Tsub_type_label.TLabel')
         self.sub_type_label.place(relx=0.01, rely=0.380, relwidth=0.200, relheight=0.13)
 
-        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('iLiHei', 10))
+        self.style.configure('Tsub_path_label.TLabel', anchor='w', font=('Microsoft YaHei', 10))
         self.sub_path_label = Label(self.user_input_frame, text='轉換檔案路徑', style='Tsub_path_label.TLabel')
         self.sub_path_label.place(relx=0.01, rely=0.010, relwidth=0.200, relheight=0.166)
 
         self.ComboVar = StringVar()
         self.Combo = Combobox(self.user_input_frame, text='S2TW', state='readonly', textvariable=self.ComboVar,
-                               font=('iLiHei', 9))
+                               font=('Microsoft YaHei', 9))
         self.Combo['values'] = ('簡轉繁+台灣慣用語', '簡轉繁', '繁轉簡')
         self.Combo.current(0)
-        self.Combo.place(relx=0.520, rely=0.800, relwidth=0.190)
+        self.Combo.place(relx=0.600, rely=0.800, relwidth=0.190)
         # self.Combo.bind('<<ComboboxSelected>>', self.get_user_conv_type)
 
         self.sub_folder_chbuttonVar = IntVar(value=0)
-        self.style.configure('Tlucky_sort_chbutton.TCheckbutton', font=('iLiHei', 9))
+        self.style.configure('Tlucky_sort_chbutton.TCheckbutton', font=('Microsoft YaHei', 9))
         self.sub_folder_chbutton = Checkbutton(self.user_input_frame, text='包含子目錄', variable=self.sub_folder_chbuttonVar, style='Tlucky_sort_chbutton.TCheckbutton')
-        self.sub_folder_chbutton.place(relx=0.750, rely=0.815, relwidth=0.160)
+        self.sub_folder_chbutton.place(relx=0.830, rely=0.730, relwidth=0.110)
+
+        self.backup_chbuttonVar = IntVar(value=1)
+        self.style.configure('Tbackup_chbutton.TCheckbutton', font=('Microsoft YaHei', 9))
+        self.backup_chbutton = Checkbutton(self.user_input_frame, text='備份原始檔', variable=self.backup_chbuttonVar, style='Tbackup_chbutton.TCheckbutton')
+        self.backup_chbutton.place(relx=0.830, rely=0.85, relwidth=0.110)
 
         # self.convert_clipboard
         # self.print_about
@@ -252,7 +270,14 @@ class replace_Sub_Gui(Frame):
     def show_rename_frame(self):
         ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
 
-    # def hide_log_widge(self):
+    def browser_explorer(self):
+        file_path = filedialog.askdirectory(initialdir=self.sub_path_entry.get())
+        if file_path:
+            file_path = os.path.abspath(file_path)
+            self.sub_path_entry.delete(0, END)
+            self.sub_path_entry.insert(0, file_path)
+
+# def hide_log_widge(self):
     #     print(self.shlog_chbuttonVar.get())
     #     if not self.shlog_chbuttonVar.get():
     #         # self.log_frame.place_forget()
@@ -338,10 +363,11 @@ class replace_Sub_Gui(Frame):
             config_lh.read_file(file_ini_lh)
             file_ini_lh.close()
             return config_lh.get(section, key)
-        except:
+        except Exception as ex:
             self.setlog("Error! 讀取ini設定檔發生錯誤! "
                         "請在AJSub目錄下使用UTF-16格式建立 " + filename, 'error')
-            return error_Type.FILE_ERROR.value
+            str(ex)
+            return ErrorType.FILE_ERROR.value
 
     def write_config(self, filename, sections, key, value):
         try:
@@ -356,63 +382,44 @@ class replace_Sub_Gui(Frame):
             file_ini_lh.close()
         except Exception as ex:
             self.setlog("Error! 寫入ini設定檔發生錯誤! "
-                        "請在AJSub目錄下使用UTF-16格式建立 " +filename, 'error')
-            return error_Type.FILE_ERROR.value
+                        "請在AJSub目錄下使用UTF-16格式建立 " + filename, 'error')
+            str(ex)
+            return ErrorType.FILE_ERROR.value
 
     def store_origin_file_to_backup_folder(self, file, back_folder):
-        shutil.copy2(file, back_folder)
+        if self.backup_chbuttonVar.get() == 1:
+            shutil.copy2(file, back_folder)
+
+    @staticmethod
+    def get_file_content_format(file_path):
+        format_list = ['utf8', 'utf-8-sig', 'utf16', 'big5', 'gbk', 'gb2312', None]
+        for file_format in format_list:
+            try:
+                with open(file_path, 'r', encoding=file_format) as subcontent_h:
+                    sub_content_lv = subcontent_h.read()
+                    # print('find correct format {} in ini file: {}'.format(file_format, self.ini_full_path))
+                return sub_content_lv, file_format
+            except Exception as ex:
+                str(ex)
+
+        return None
 
     def conv_and_replace_sub_write_file(self, subfile_list, subdata_dic):
         status_lv = True
         self.log_txt.config(state="normal")
         subfile_list_lt = tuple(subfile_list)
         for i in subfile_list_lt:
-            # -----Test sub file format-----
-            try:
-                subcontent_h = open(i, 'r+', encoding='utf8')
-                sub_content_lv = subcontent_h.read()
-            except:
-                try:
-                    subcontent_h.close()
-                    subcontent_h = open(i, 'r+', encoding='utf16')
-                    sub_content_lv = subcontent_h.read()
-                except:
-                    try:
-                        subcontent_h.close()
-                        subcontent_h = open(i, 'r', encoding='gbk')
-                        sub_content_lv = subcontent_h.read()
-                    except:
-                        try:
-                            subcontent_h.close()
-                            subcontent_h = open(i, 'r', encoding='gb2312')
-                            sub_content_lv = subcontent_h.read()
-                        except:
-                            try:
-                                subcontent_h.close()
-                                subcontent_h = open(i, 'r', encoding='big5')
-                                sub_content_lv = subcontent_h.read()
-                            except:
-                                status_lv = False
-                                self.setlog("Error! 無法開啟或寫入檔案, 請確認檔案非唯讀: %s " % i, 'error')
-                                continue
-                    # -----For GBK and GB2312 format-----
-                    subcontent_h.close()
-                    # -----backup origin sub file to backup folder-----
-                    self.store_origin_file_to_backup_folder(i, self.user_input_path+'\\'+backup_folder_name)
-                    sub_content_temp_lv = sub_content_lv
-                    # -----convert-----
-                    self.setlog_large("轉碼中: %s" % i)
-                    # tw_str_lv = langconver.s2tw(sub_content_lv)
-                    conv_ls = self.get_user_conv_type()
-                    tw_str_lv = langconver.convert_lang_select(sub_content_lv, conv_ls)
-                    self.setlog_large("替換字串: %s" % i, 'info2')
-                    tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
-                    if sub_content_temp_lv != tw_str_lv:
-                        subcontent_write_h = open(i, 'w', encoding='utf8')
-                        subcontent_write_h.seek(0, 0)
-                        subcontent_write_h.write(tw_str_lv)
-                        subcontent_write_h.close()
-                    continue
+            sub_content_lv, file_format = self.get_file_content_format(i)
+
+            if not file_format:
+                status_lv = False
+                self.setlog("Error! 無法開啟檔案, 請確認檔案: %s " % i, 'error')
+                continue
+
+            if file_format == 'utf16' or file_format == 'utf-8-sig':
+                write_file_format = file_format
+            else:
+                write_file_format = 'utf8'
 
             # -----backup origin sub file to backup folder-----
             self.store_origin_file_to_backup_folder(i, '%s\\%s' % (self.user_input_path, backup_folder_name))
@@ -427,15 +434,16 @@ class replace_Sub_Gui(Frame):
             tw_str_lv = replace_sub.replace_specif_string(tw_str_lv, subdata_dic)
             # -----if sub file content is changed, write to origin file-----
             if sub_content_temp_lv != tw_str_lv:
+                subcontent_h = open(i, 'w', encoding=write_file_format)
                 subcontent_h.seek(0, 0)
                 subcontent_h.write(tw_str_lv)
-            subcontent_h.close()
+                subcontent_h.close()
 
         self.log_txt.config(state="disable")
         return status_lv
 
     def replace_all_sub_in_path(self):
-        w_file_stat_lv = error_Type.NORMAL.value
+        w_file_stat_lv = ErrorType.NORMAL.value
 
         # -----Clear text widge for log-----
         self.log_txt.config(state="normal")
@@ -456,7 +464,7 @@ class replace_Sub_Gui(Frame):
         # -----get config ini file setting-----
         self.subpath_ini = self.read_config(sub_setting_name, 'Global', 'subpath')
         self.subfiletype_list_ini = self.read_config(sub_setting_name, 'Global', 'subtype')
-        if self.subpath_ini == error_Type.FILE_ERROR.value or self.subfiletype_list_ini == error_Type.FILE_ERROR.value:
+        if self.subpath_ini == ErrorType.FILE_ERROR.value or self.subfiletype_list_ini == ErrorType.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
                                          "錯誤! 讀取ini設定檔發生錯誤! "
                                          "請在AJSub目錄下使用UTF-16格式建立 " + sub_setting_name)
@@ -475,14 +483,14 @@ class replace_Sub_Gui(Frame):
             self.setlog("新的檔案類型設定寫入設定檔: " + sub_setting_name, "info")
             # print("type not match, write new type list to ini")
             w_file_stat_lv = self.write_config(sub_setting_name, 'Global', 'subtype', self.user_input_type)
-        if w_file_stat_lv == error_Type.FILE_ERROR.value:
+        if w_file_stat_lv == ErrorType.FILE_ERROR.value:
             tkinter.messagebox.showerror("Error",
                                          "錯誤! 寫入ini設定檔發生錯誤! "
                                          "請在AJSub目錄下使用UTF-16格式建立 " + sub_setting_name)
             return
 
         # ----Split file type string and store to list-----
-        re_lv = re.sub(r' ', '', self.user_input_type)
+        re_lv = re.sub(r' ', '', str(self.user_input_type))
         self.user_input_type = re_lv.split(",")
         # -----remove duplicate item-----
         self.user_input_type = set(self.user_input_type)
@@ -531,7 +539,7 @@ class replace_Sub_Gui(Frame):
         self.update_idletasks()
 
         # -----make backup folder for store origin sub files-----
-        if not os.path.exists(self.user_input_path+'\\'+backup_folder_name):
+        if not os.path.exists(self.user_input_path+'\\'+backup_folder_name) and self.backup_chbuttonVar.get() == 1:
             os.makedirs(self.user_input_path+'\\'+backup_folder_name)
         # -----Replace all file list string by dic structure-----
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
@@ -574,6 +582,8 @@ if __name__ == '__main__':
     sub_setting_name = "%s\\%s" % (os.getcwd(), sub_setting_name)
     sub_database_name = "%s\\%s" % (os.getcwd(), sub_database_name)
 
+    windll.shcore.SetProcessDpiAwareness(True)
+
     if not check_all_file_status():
         tkinter.messagebox.showerror("Error", "遺失必要檔案! \n\n請確認AJSub目錄有以下檔案存在, 或 "
                                               "重新安裝AJSub:\n"
@@ -591,17 +601,18 @@ if __name__ == '__main__':
         subpath = config_h.get('Global', 'subpath')
         subfiletype_list = config_h.get('Global', 'subtype')
         config_h.clear()
-    except:
+    except Exception as e:
         tkinter.messagebox.showerror("Error",
                                      "讀取設定檔 " + sub_setting_name + " 或 " + sub_database_name + " 錯誤!\n"
                                      "請確認檔案格式為UTF-16 (unicode format) 或重新安裝AJSub")
+        str(e)
         sys.exit(0)
 
     # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
     # -----Start GUI class-----
     root.geometry('880x670')
-    app = replace_Sub_Gui(master=root, subfilepath_ini=subpath,
-                          subfiletype_ini=subfiletype_list, help_text=help_text)
+    app = ReplaceSub(master=root, subfilepath_ini=subpath,
+                     subfiletype_ini=subfiletype_list, help_text=show_help_text)
     # -----Start main loop-----
     app.mainloop()
