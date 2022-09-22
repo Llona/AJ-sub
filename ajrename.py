@@ -27,7 +27,7 @@ class error_Code(Enum):
 
 
 class rename_frame:
-    def __init__(self, parent, main_sub_path, main_sub_type, setting_name):
+    def __init__(self, parent, main_sub_path, main_sub_type, setting_name, root_path):
         self.status = error_Code.NORMAL.value
         self.select_turn_on_mapping_fl = False
         self.main_sub_path = main_sub_path
@@ -46,7 +46,7 @@ class rename_frame:
         self.top = Toplevel(parent)
         self.top.geometry('1264x754')
         self.top.title("AJRen - 全力修改! 檔名君")
-        self.top.iconbitmap('icons\\rename.ico')
+        self.top.iconbitmap(os.path.join(root_path, 'icons', 'rename.ico'))
         # self.top_window = Toplevel(parent)
         # self.top_window.overrideredirect(1)
         self.top['takefocus'] = True
@@ -175,7 +175,7 @@ class rename_frame:
         self.start_button = Button(self.mapping_frame, text='比對改名', command=self.start_mapping_rename, style='Tstart_button.TButton')
         self.start_button.place(relx=0.021, rely=0.835, relwidth=0.127, relheight=0.111)
 
-        self.turnon_mapping_chbuttonVar = IntVar(value=0)
+        self.turnon_mapping_chbuttonVar = IntVar(value=1)
         self.style.configure('Tturnon_mapping_chbutton.TCheckbutton', font=('iLiHei', 10))
         self.turnon_mapping_chbutton = Checkbutton(self.mapping_frame, text='啟用', variable=self.turnon_mapping_chbuttonVar, style='Tturnon_mapping_chbutton.TCheckbutton')
         self.turnon_mapping_chbutton.place(relx=0.021, rely=0.050, relwidth=0.159, relheight=0.084)
@@ -813,7 +813,6 @@ class rename_frame:
         for i in sub_file_list_ll:
             # subfile_list_ls = tuple(subfile_list_ls)
             subfile_list_odic[i] = ""
-
 
         # -----Free memory-----
         del temp_file_list_ll

@@ -53,3 +53,9 @@ Ver 4.5.7, 2022/09/14
 5. Add select backup file function
 6. Improve exe file package method
 7. Fix GUI font blurry problem
+
+Ver 4.5.8, 2022/09/22
+1. Set Dpi Awareness in windows OS only
+2. Fix path error issue
+3. Use os.join for folder path
+4. Change mapping rename to default

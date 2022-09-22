@@ -40,6 +40,11 @@ Ver 4.5.7 -
     5. Add select backup file function
     6. Improve exe file package method
     7. Fix GUI font blurry problem
+Ver 4.5.8 -
+    1. Set Dpi Awareness in windows OS only
+    2. Fix path error issue
+    3. Use os.join for folder path
+    4. Change mapping rename to default
 """
 
 from tkinter import *
@@ -50,6 +55,7 @@ import tkinter.messagebox
 import re
 import configparser
 import os
+from os import path
 import shutil
 # from tkinter.scrolledtext import ScrolledText
 # from time import sleep
@@ -59,12 +65,16 @@ from enum import Enum
 import replace_sub
 import langconver
 import ajrename
-from ctypes import windll
+import sys
+
+if sys.platform.startswith('win32'):
+    from ctypes import windll
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.7"
+version = "v4.05.8"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
+icon_name = 'main.ico'
 backup_folder_name = "backfile"
 subpath = ""  # SUB file path, read from Settings.ini
 subfiletype_list = ""  # SUB file type, read from Settings.ini, ex: *.ssa, *.ass
@@ -111,7 +121,6 @@ class ReplaceSub(Frame):
         self.help_text = help_text
         self.user_input_path = ""
         self.user_input_type = ""
-        self.app_current_path_lv = os.getcwd()
         # self.checkbutton_select = IntVar()
         # self.grid()
         # # -----Define all GUI item-----
@@ -268,7 +277,7 @@ class ReplaceSub(Frame):
             print('Error! combobox input is error:%s ' % conv_type_ls)
 
     def show_rename_frame(self):
-        ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name)
+        ajrename.rename_frame(self, self.sub_path_entry.get(), self.sub_type_entry.get(), sub_setting_name, root_path)
 
     def browser_explorer(self):
         file_path = filedialog.askdirectory(initialdir=self.sub_path_entry.get())
@@ -411,7 +420,7 @@ class ReplaceSub(Frame):
         for i in subfile_list_lt:
             sub_content_lv, file_format = self.get_file_content_format(i)
 
-            if not file_format:
+            if not sub_content_lv:
                 status_lv = False
                 self.setlog("Error! 無法開啟檔案, 請確認檔案: %s " % i, 'error')
                 continue
@@ -422,7 +431,7 @@ class ReplaceSub(Frame):
                 write_file_format = 'utf8'
 
             # -----backup origin sub file to backup folder-----
-            self.store_origin_file_to_backup_folder(i, '%s\\%s' % (self.user_input_path, backup_folder_name))
+            self.store_origin_file_to_backup_folder(i, path.join(self.user_input_path, backup_folder_name))
             # -----for utf8 and utf16 format-----
             sub_content_temp_lv = sub_content_lv
             # -----convert-----
@@ -539,8 +548,9 @@ class ReplaceSub(Frame):
         self.update_idletasks()
 
         # -----make backup folder for store origin sub files-----
-        if not os.path.exists(self.user_input_path+'\\'+backup_folder_name) and self.backup_chbuttonVar.get() == 1:
-            os.makedirs(self.user_input_path+'\\'+backup_folder_name)
+        backup_folder_path = path.join(self.user_input_path, backup_folder_name)
+        if not os.path.exists(backup_folder_path) and self.backup_chbuttonVar.get() == 1:
+            os.makedirs(backup_folder_path)
         # -----Replace all file list string by dic structure-----
         status = self.conv_and_replace_sub_write_file(sub_file_list, sub_data_dic)
 
@@ -559,38 +569,58 @@ class ReplaceSub(Frame):
             self.setlog("***順利完成! 轉碼與取代字串成功***", "info")
             tkinter.messagebox.showinfo("message", "轉碼與取代字串成功")
         else:
-            self.setlog("***錯誤! 轉碼與取代字串發生錯誤, 請參考log視窗***", "error")
+            self.setlog("***錯誤! 轉碼與取代字串發生錯誤***", "error")
             tkinter.messagebox.showerror("Error", "轉碼與取代字串發生錯誤, 請參考log視窗")
 
 
-def check_all_file_status():
-    if not os.path.exists(sub_database_name):
+def check_all_file_status(root_paths):
+    if not os.path.exists(path.join(root_paths, sub_database_name)):
         return False
-    if not os.path.exists(sub_setting_name):
+    if not os.path.exists(path.join(root_paths, sub_setting_name)):
         return False
-    if not os.path.exists('icons\\main.ico'):
+    if not os.path.exists(path.join(root_paths, 'icons', icon_name)):
         return False
     return True
 
 
+def set_all_file_path(root_paths):
+    global sub_setting_name, sub_database_name, icon_name
+    sub_setting_name = path.join(root_paths, sub_setting_name)
+    sub_database_name = path.join(root_paths, sub_database_name)
+    icon_name = path.join(root_paths, 'icons', icon_name)
+
+
+def find_root_path():
+    retry_count = 1
+    root_path_local = sys.path[0]
+
+    while retry_count <= 2:
+        if check_all_file_status(root_path_local):
+            return root_path_local
+        else:
+            root_path_local = path.join(root_path_local, '..')
+        retry_count += 1
+
+    return None
+
+
 if __name__ == '__main__':
-    # -----MessageBox will create tkinter, so create correct setting tkinter first
+    # -----MessageBox will create tkinter, so hide tkinter first
     root = Tk()
-    root.title(title)
-    root.iconbitmap('icons\\main.ico')
+    root.withdraw()
 
-    sub_setting_name = "%s\\%s" % (os.getcwd(), sub_setting_name)
-    sub_database_name = "%s\\%s" % (os.getcwd(), sub_database_name)
-
-    windll.shcore.SetProcessDpiAwareness(True)
-
-    if not check_all_file_status():
+    root_path = find_root_path()
+    if not root_path:
         tkinter.messagebox.showerror("Error", "遺失必要檔案! \n\n請確認AJSub目錄有以下檔案存在, 或 "
                                               "重新安裝AJSub:\n"
                                               "1. " + sub_setting_name + "\n"
                                               "2. " + sub_database_name + "\n"
                                               "3. icons\\main.ico")
         sys.exit(0)
+    set_all_file_path(root_path)
+
+    if sys.platform.startswith('win32'):
+        windll.shcore.SetProcessDpiAwareness(True)
 
     try:
         # -----Get setting from Settings.ini-----
@@ -611,7 +641,12 @@ if __name__ == '__main__':
     # -----Get database list to dic structure-----
     sub_data_dic = replace_sub.get_database_list(sub_database_name)
     # -----Start GUI class-----
+    root.title(title)
+    root.iconbitmap(icon_name)
     root.geometry('880x670')
+    # show GUI
+    # root.update()
+    root.deiconify()
     app = ReplaceSub(master=root, subfilepath_ini=subpath,
                      subfiletype_ini=subfiletype_list, help_text=show_help_text)
     # -----Start main loop-----
