@@ -59,3 +59,6 @@ Ver 4.5.8, 2022/09/22
 2. Fix path error issue
 3. Use os.join for folder path
 4. Change mapping rename to default
+
+Ver 4.5.9, 2022/09/22
+1. Fix file path string show in log windows problem

@@ -45,6 +45,7 @@ Ver 4.5.8 -
     2. Fix path error issue
     3. Use os.join for folder path
     4. Change mapping rename to default
+Ver 4.5.9 - Fix file path string show in log windows problem
 """
 
 from tkinter import *
@@ -71,7 +72,7 @@ if sys.platform.startswith('win32'):
     from ctypes import windll
 
 title = "AJSub - 強力轉換! 轉碼君"
-version = "v4.05.8"
+version = "v4.05.9"
 sub_database_name = "SubList.sdb"
 sub_setting_name = "Settings.ini"
 icon_name = 'main.ico'
@@ -598,7 +599,7 @@ def find_root_path():
         if check_all_file_status(root_path_local):
             return root_path_local
         else:
-            root_path_local = path.join(root_path_local, '..')
+            root_path_local = path.abspath(path.join(root_path_local, path.pardir))
         retry_count += 1
 
     return None
@@ -645,7 +646,7 @@ if __name__ == '__main__':
     root.iconbitmap(icon_name)
     root.geometry('880x670')
     # show GUI
-    # root.update()
+    root.update()
     root.deiconify()
     app = ReplaceSub(master=root, subfilepath_ini=subpath,
                      subfiletype_ini=subfiletype_list, help_text=show_help_text)
